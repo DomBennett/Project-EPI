@@ -1,0 +1,66 @@
+#NEXUS
+
+[ Small test nexus file for re-developing the nexus reader function (DJB 18/11/2013)]
+
+BEGIN TAXA;
+	DIMENSIONS NTAX=5;
+	TAXLABELS
+		'Morganucodon oehleri'
+		'Morganucodon watsoni'
+		'Haldanodon exspectatus'
+		'Ornithorhynchus anatinus'
+		'Tachyglossus aculeatus'
+	;
+ENDBLOCK;
+
+BEGIN CHARACTERS;
+	DIMENSIONS NCHAR=6;
+	FORMAT DATATYPE=STANDARD MISSING=? GAP=- SYMBOLS="0123456789EFIJLOPQX";
+
+	CHARLABELS
+		 [1] 'GEN skull, telescoping, presence'
+		 [2] 'GEN skull, telescoping type'
+		 [3] 'GEN skull, dorsal margin, shape at juncture of braincase and rostrum in lateral view'
+		 [4] 'GEN skull, posterior extension of alveolar line and occiput, intersection'
+		 [5] 'RPL rostrum, facial asymmetry, presence'
+		 [6] 'RPL rostrum, height in lateral view'
+	;
+
+	STATELABELS
+		1
+		'absent'
+		'present'
+		,
+		2
+		'maxilla over frontal'
+		'maxilla under frontal'
+		,
+		3
+		'concave'
+		'flat'
+		'convex'
+		,
+		4
+		'passes ventral to foramen magnum'
+		'intersects foramen magnum'
+		'intersects supraoccipital'
+		'intersects interparietal (or parietal)'
+		,
+		5
+		'facial structures bilaterally symmetrical'
+		'facial structures more developed and larger on the right'
+		,
+		6
+		'depressed anteriorly'
+		'uniform'
+		'elevated anteriorly'
+	;
+	
+	MATRIX
+	'Morganucodon oehleri'		                      0-1000
+	'Morganucodon watsoni'				      010101
+	'Haldanodon exspectatus'			      101010
+	'Ornithorhynchus anatinus'			      000011
+	'Tachyglossus aculeatus'			      010101
+	;
+ENDBLOCK;
