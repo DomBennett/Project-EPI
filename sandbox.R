@@ -20,6 +20,8 @@ precedingEdge <- function(phylo, node) {
 }
 findCladeName <- function(taxa.resolved) { # this really slows down the code...
   ## takes a taxaResolve object and returns the name of the lowest shared taxonomic group
+  print (is.character(as.vector(taxa.resolved$lineage)))
+  print (as.vector(taxa.resolved$lineage))
   lineages <- strsplit(as.vector(taxa.resolved$lineage), "\\|")
   previous <- lineages[[1]][2] # start at 2, frist element is empty
   success <- FALSE
@@ -86,8 +88,14 @@ for (i in 1:length(nodes)) {
   print (i)
   temp.taxa <- tips(binary.tree, nodes[i])
   if (length(temp.taxa) > 1) {
+    print ("before taxaResolve")
     taxa.resolved <- taxaResolve(temp.taxa)
-    clades[i] <- findCladeName(taxa.resolved)
+    print ("after taxaResolve")
+    if (any(is.na(taxa.resolved))) {
+      clades[i] <- NA
+    } else {
+      clades[i] <- findCladeName(taxa.resolved)
+    }
   } else { # if only one species is returned
     clades[i] <- temp.taxa
   }
@@ -104,3 +112,4 @@ res <- data.frame(taxon = taxa, clade = clades, node = nodes, preceding.node = p
                   mass.by.edge = abs(mass.change/edge.lengths))
 res <- res[res$mass.by.edge != Inf,] # remove inf
 res <- res[order(res$mass.by.edge),]
+write.csv(x = res, file = file.path(output.dir, "LFI_mammal_masses.csv"))
