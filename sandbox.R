@@ -18,27 +18,35 @@ precedingNode <- function(phylo, node) {
 precedingEdge <- function(phylo, node) {
   return (phylo$edge.length[phylo$edge[,2] == node])
 }
-findCladeName <- function(taxa.resolved) { # this really slows down the code...
+findCladeName <- function(names) { # this really slows down the code...
   ## takes a taxaResolve object and returns the name of the lowest shared taxonomic group
-  print (is.character(as.vector(taxa.resolved$lineage)))
-  print (as.vector(taxa.resolved$lineage))
-  lineages <- strsplit(as.vector(taxa.resolved$lineage), "\\|")
-  previous <- lineages[[1]][2] # start at 2, frist element is empty
-  success <- FALSE
-  for (i in 3:length(lineages[[1]])) {
-    slice <- unlist(lapply(lineages, function(x) x[i]))
-    if (all(slice %in% slice[1])) {
-      previous <- slice[1]
-      next
+  ## TODO: not tested
+  if (length(names) > 1) {
+    split.names <- strsplit(names, " ")
+    if (all(lapply(split.names, function(x) x[1]) %in% split.names[[1]][1])) {
+      return(split.names[[1]][1])
     } else {
-      success <- TRUE
-      break
+      taxa.resolved <- taxaResolve(names)
+      if (any(is.na(taxa.resolved))) {
+        return ("Failed taxon resolution")
+      } else {
+        lineages <- strsplit(as.vector(taxa.resolved$lineage), "\\|")
+        previous <- lineages[[1]][2] # start at 2, frist element is empty
+        success <- FALSE
+        for (i in 3:length(lineages[[1]])) {
+          slice <- unlist(lapply(lineages, function(x) x[i]))
+          if (all(slice %in% slice[1])) {
+            previous <- slice[1]
+            next
+          } else {
+            return (previous)
+          }
+        }
+        return ("findCladeNames failed")
+      }
     }
-  }
-  if (success) {
-    return (previous)
   } else {
-    return ("findCladeName failed")
+    return (names)
   }
 }
 
