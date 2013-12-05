@@ -20,7 +20,6 @@ taxaResolve <- function (names, batch = 100){
   x <- seq_along(temp.taxa)
   di <- split(temp.taxa, ceiling(x/batch))
   for (d in di) {
-    print (d)
     temp.data <- batchResolve(d)
     data <- c(data, temp.data)
   }

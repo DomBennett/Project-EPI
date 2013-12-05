@@ -70,8 +70,8 @@ data <- data[data$Binomial %in% tree$tip.label, ]
 
 ## Remove polytomies
 # manageable size
-#sample.names <- tree$tip.label[sample(1:3237, 30)] # take uniform sample to avoid polys
-#sampled.tree <- drop.tip(tree, tree$tip.label[!tree$tip.label %in% sample.names])
+# sample.names <- tree$tip.label[sample(1:3237, 500)] # take uniform sample to avoid polys
+# tree <- drop.tip(tree, tree$tip.label[!tree$tip.label %in% sample.names])
 #plot(sampled.tree)
 binary.tree <- multi2di(tree)
 #plot(binary.tree)
@@ -95,18 +95,7 @@ mass.changes <- edge.lengths <- preceding.nodes <- mass.nodes <- mass.preceding.
 for (i in 1:length(nodes)) {
   print (i)
   temp.taxa <- tips(binary.tree, nodes[i])
-  if (length(temp.taxa) > 1) {
-    print ("before taxaResolve")
-    taxa.resolved <- taxaResolve(temp.taxa)
-    print ("after taxaResolve")
-    if (any(is.na(taxa.resolved))) {
-      clades[i] <- NA
-    } else {
-      clades[i] <- findCladeName(taxa.resolved)
-    }
-  } else { # if only one species is returned
-    clades[i] <- temp.taxa
-  }
+  clades[i] <- findCladeName(temp.taxa)
   taxa[i] <- paste(tips(binary.tree, nodes[i]), collapse = "|")
   preceding.nodes[i] <- precedingNode(binary.tree, nodes[i])
   edge.lengths[i] <- precedingEdge(binary.tree, nodes[i])
@@ -120,4 +109,4 @@ res <- data.frame(taxon = taxa, clade = clades, node = nodes, preceding.node = p
                   mass.by.edge = abs(mass.change/edge.lengths))
 res <- res[res$mass.by.edge != Inf,] # remove inf
 res <- res[order(res$mass.by.edge),]
-write.csv(x = res, file = file.path(output.dir, "LFI_mammal_masses.csv"))
+write.csv(x = res, file = file.path(output.dir, "LFI_mammal_masses.csv"), row.names = FALSE)
