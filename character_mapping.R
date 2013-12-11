@@ -49,48 +49,40 @@ phylo <- sim.bdtree(b = 1, d = 0, n = length(characters) - 1)
 phylo <- addOutgroup(phylo)
 phylo$tip.label <- sample(names(characters))
 plot(phylo)
+# NB each character transistion must sum to 0
+#q <- list(rbind(c(-1, 1/3, 1/3, 1/3), c(1/3, -1, 1/3, 1/3), c(1/3, 1/3, -1, 1/3), 
+#                c(1/3, 1/3, 1/3, -1)))
+q <- list(rbind(c(-0.1, 0.1), c(0.01, -0.01)))
+x <-sim.char(phylo, q, model="discrete", n=1)[,,1]
 
 ## Using parsimony
 outgroup <- phylo$tip.label[1]
 uphylo <- unroot(phylo)
-res <- list()
-for (i in 1:length(characters[[1]])) {
-  x <- unlist(lapply(characters, function(t) t[[i]]))
-  mpr.res <- MPR(x[uphylo$tip.label], uphylo, outgroup)
-  plot(uphylo, no.margin = TRUE, show.tip.label = FALSE)
-  nodetexts <- apply(mpr.res, 1, function(t) paste0(t, collapse = ","))
-  nodelabels(text = nodetexts, frame = "none")
-  tiplabels(x[phylo$tip.label], adj = -2, frame = "none")
-  res <- c(res, list(mpr.res))
-}
+res <- MPR(x[uphylo$tip.label], uphylo, outgroup)
+plot(uphylo, no.margin = TRUE, show.tip.label = FALSE)
+nodetexts <- apply(res, 1, function(t) paste0(t, collapse = ","))
+nodelabels(text = nodetexts, bg = "white", cex = .75)
+tiplabels(x[phylo$tip.label], adj = -2, frame = "none", cex = .75)
 
 ## Using ML
-
-mphylo <- make.simmap(phylo, x)
-
+# https://stat.ethz.ch/pipermail/r-sig-phylo/2013-May/002724.html
+#http://www.springer.com/life+sciences/evolutionary+%26+developmental+biology/book/978-1-4614-1742-2
+#x <- unlist(lapply(characters, function(t) t[[1]]))
+mphylo <- make.simmap(phylo, x[phylo$tip.label], model = "SYM")
 plotSimmap(mphylo)
-
-?vcv
-
-ace(x, phylo, type = "discrete")
-
-plot(phylo)
+names(mphylo)
+mphylo$mapped.edge
+mphylo$logL
 
 
-
-plot(rtree(30, rooted = FALSE))
-
-tr <- read.tree(text = "(((i,j)c,(k,l)b)a,(h,g)e,f)d;")
-x <- c(1, 3, 0, 6, 5, 2, 4)
-names(x) <- letters[6:12]
-(o <- MPR(x, tr, "f"))
-plot(tr)
-nodelabels(paste("[", o[, 1], ",", o[, 2], "]", sep = ""))
-tiplabels(x[tr$tip.label], adj = -2)
-
-x <- rpois(30, 1)
-tr <- rtree(30, rooted = FALSE)
-plot(tr, show.tip.label = FALSE)
-o <- MPR(x, tr, "t1")
-nodelabels(paste("[", o[, 1], ",", o[, 2], "]", sep = ""))
-tiplabels(x[tr$tip.label])#, adj = -2)
+## MPR
+#res <- list()
+#for (i in 1:length(characters[[1]])) {
+#  x <- unlist(lapply(characters, function(t) t[[i]]))
+#  mpr.res <- MPR(x[uphylo$tip.label], uphylo, outgroup)
+#  plot(uphylo, no.margin = TRUE, show.tip.label = FALSE)
+#  nodetexts <- apply(mpr.res, 1, function(t) paste0(t, collapse = ","))
+#  nodelabels(text = nodetexts, frame = "none")
+#  tiplabels(x[phylo$tip.label], adj = -2, frame = "none")
+#  res <- c(res, list(mpr.res))
+#}
