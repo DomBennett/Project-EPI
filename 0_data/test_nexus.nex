@@ -1,22 +1,29 @@
 #NEXUS
 
-[ Small test nexus file for re-developing the nexus reader function (DJB 18/11/2013)]
+[ File output by Morphobank v3.0 (http://www.morphobank.org); 2014-01-8 09.22.26. Edited by DJB for testing reading into R. ]
 
 BEGIN TAXA;
-	DIMENSIONS NTAX=5;
+	DIMENSIONS NTAX=11;
 	TAXLABELS
 		'Morganucodon oehleri'
 		'Morganucodon watsoni'
 		'Haldanodon exspectatus'
 		'Ornithorhynchus anatinus'
 		'Tachyglossus aculeatus'
+		'Zhangheotherium quinquecuspidens'
+		'Henkelotherium guimarotae'
+		'Pucadelphys andinus'
+		'Didelphis virginiana'
+		'Dromiciops gliroides'
+		'Invented animal'
 	;
 ENDBLOCK;
 
-BEGIN CHARACTERS;
-	DIMENSIONS NCHAR=6;
-	FORMAT DATATYPE=STANDARD MISSING=? GAP=- SYMBOLS="0123456789EFIJLOPQX";
 
+BEGIN CHARACTERS;
+	DIMENSIONS NCHAR=10;
+	FORMAT DATATYPE=STANDARD MISSING=? GAP=- SYMBOLS="012";
+	
 	CHARLABELS
 		 [1] 'GEN skull, telescoping, presence'
 		 [2] 'GEN skull, telescoping type'
@@ -24,8 +31,13 @@ BEGIN CHARACTERS;
 		 [4] 'GEN skull, posterior extension of alveolar line and occiput, intersection'
 		 [5] 'RPL rostrum, facial asymmetry, presence'
 		 [6] 'RPL rostrum, height in lateral view'
+		 [7] 'RPL rostrum, dorsal margin of rostrum position relative to dorsal margin of braincase in lateral view'
+		 [8] 'RPL rostrum, shape in dorsal view'
+		 [9] 'RPL rostrum, orientation of upper alveolar line at anterior half of rostrum relative to posterior half of rostrum in lateral view'
+		 [10] 'RPL rostrum, length relative to greatest skull length VAR'
+		 
 	;
-
+	
 	STATELABELS
 		1
 		'absent'
@@ -54,13 +66,40 @@ BEGIN CHARACTERS;
 		'depressed anteriorly'
 		'uniform'
 		'elevated anteriorly'
+		,
+		7
+		'rostrum lower'
+		'subequal'
+		'rostrum higher'
+		,
+		8
+		'uniform or slightly tapered anteriorly'
+		'wider anteriorly than posteriorly'
+		,
+		9
+		'downturned anteriorly'
+		'horizontal'
+		'upturned anteriorly'
+		,
+		10
+		'extremely short, less than 15% greatest skull length'
+		'equal to or more than 15% and less than 30%'
+		'equal to or more than 30% and less than 60%'
+		'extremely elongated, more than 60%'
+		,
 	;
 	
 	MATRIX
-	'Morganucodon oehleri'		                      0-1000
-	'Morganucodon watsoni'				      010101
-	'Haldanodon exspectatus'			      101010
-	'Ornithorhynchus anatinus'			      000011
-	'Tachyglossus aculeatus'			      010101
-	;
+	'Morganucodon oehleri'		                      0-10000012
+	'Morganucodon watsoni'		                      0-10000012
+	'Haldanodon exspectatus'		                  0-11010012
+	'Ornithorhynchus anatinus'		                  0-10000102
+	'Tachyglossus aculeatus'		                  0-00000012
+	'Zhangheotherium quinquecuspidens'		          0-1000000?
+	'Henkelotherium guimarotae'		                  ??????????
+	'Pucadelphys andinus'		                      0-20000002
+	'Didelphis virginiana'		                      0-10000002
+	'Dromiciops gliroides'		                      0-10000002
+	'Invented animal'								  0000000000
+		;
 ENDBLOCK;

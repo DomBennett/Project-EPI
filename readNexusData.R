@@ -111,3 +111,116 @@ readNexusData <- function (file)
   Obj <- lapply(Obj, tolower)
   Obj
 }
+
+data <- readNexusData("0_data/morpho_matrix_forR.nex")
+
+data[[1]]
+
+
+file <- "0_data/test_nexus.nex"
+
+data <- scan(file = file, what = character(), sep = "\n", quiet = TRUE, 
+             strip.white = TRUE, quote = '\'')
+
+getBlock <- function (block.header, data) {
+  start.line <- 0
+  for (i in 1:length(data)) {
+    if (grepl(block.header, data[i])) {
+      start.line <- i + 1
+      break
+    }
+  }
+  end.line <- 0
+  for (i in start.line:length(data)) {
+    if (grepl("ENDBLOCK", data[i])) {
+      end.line <- i - 1
+      break
+    }
+  }
+  return (data[start.line:end.line])
+}
+
+getBlockData <- function (label, block) {
+  start.line <- 0
+  for (i in 1:length(block)) {
+    if (grepl(label, block[i])) {
+      start.line <- i
+      break
+    }
+  }
+  if (start.line == 0) {
+    stop (paste0 ("Block data error: no label ", label))
+  }
+  end.line <- 0
+  for (i in start.line:length(block)) {
+    if (grepl(';$', block[i])) {
+      end.line <- i
+      break
+    }
+  }
+  if (start.line == end.line) {
+    block.data <- strsplit (block[start.line], '\\s')[[1]][-1]
+    res <- matrix (ncol = 2, nrow = length(block.data))
+    colnames(res) <- c("name", "value")
+    for (i in 1:length(block.data)) {
+      element <- strsplit(block.data[i], "=")[[1]]
+      # strip excessive characters caused by quotes and semi-colon at end of line
+      element[2] <- gsub('\\"|;', "", element[2])
+      res[i,1] <- element[1]
+      res[i,2] <- element[2]
+    }
+  } else {
+    res <- vector()
+    for (i in (start.line+1):(end.line-1)) {
+      res <- c(res, block[i])
+    }
+  }
+  return (res)
+}
+
+matrixReader <- function(matrix, nchars, chars, tax.labels) {
+  temp.matrix <- matrix
+  for (i in 1:length (tax.labels)) {
+    for (j in 1:length (matrix)) {
+      if (grepl (tax.labels[i], matrix[j])) {
+        characters <- sub(tax.labels[i], "", matrix[j])
+        characters <- gsub("\\s+", "", characters)
+        break
+      }
+    }
+    characters.frame <- rep(NA, nchars)
+    characters <- "{013}{0,1,3}111111"
+    characters <- strsplit(characters, "")[[1]]
+    if ("{" %in% characters) {
+      start <- grep("\\{", characters)
+      end <- grep("\\}", characters)
+      for (j in 1:length(start)) {
+        multichar <- characters[start[j]:end[j]]
+        multichar <- paste(multichar[multichar %in% chars], collapse = "")
+        # how to remove the {0,1,3} once i've reduced the multistate?
+        characters <- c(characters[1:start[j]], multichar, characters[end[j]:length(characters)])
+      }
+    }
+    characters.bool <- characters %in% chars
+    grep("\\{", characters)
+    grep("\\}", characters)
+    match(TRUE, characters.bool)
+    for (j in 1:length(nchars)) {
+      # check if character is allowed, if not assume it is a multiple state character
+      strsplit(characters, "")[[1]]
+      if (characters[j] %in% chars) {
+        characters.frame[j] <- chars[j]
+      } else {
+        
+      }
+    }
+  }
+}
+
+taxa.block <- getBlock(block.header = 'BEGIN TAXA', data)
+char.block <- getBlock(block.header = 'BEGIN CHARACTERS', data)
+taxa.block.dim <- getBlockData(label = "DIMENSIONS", taxa.block)
+char.block.dim <- getBlockData(label = "DIMENSIONS", char.block)
+char.block.format <- getBlockData(label = "FORMAT", char.block)
+tax.labels <- getBlockData(label = 'TAXLABELS', taxa.block)
+matrix <- getBlockData(label = 'MATRIX', char.block)
