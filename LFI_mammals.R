@@ -26,8 +26,25 @@ addOutgroup <- function(phylo, outgroup.factor = 100) {
 input.dir <- "0_data"
 
 ## Input
-chars <- readNexusData(file.path(input.dir, "morpho_matrix_forR.nex"))
-lapply(chars)
-chars[[1]]
+file <- "mbank_X1766_1-8-2014_922_no_notes.nex"
+chars <- readNexusData(file.path(input.dir, file))
+phylo <- read.tree(file.path(input.dir, "bininda.txt"))
+phylo$tip.label <- sub("_", " ", phylo$tip.label)
+# only using names in phylo
+chars <- chars[(rownames(chars) %in% phylo$tip.label),]
+phylo <- drop.tip(phylo, phylo$tip.label[!phylo$tip.label %in% rownames(chars)])
 
-# for each character i need to know if its ordered
+# for each character i need to know if it's ordered
+for (i in ncol(chars)) {
+  # extract phylogeny for species with character
+  char <- chars[ ,i]
+  if (any(is.na(char))) {
+    char <- char[!is.na(char)]
+    temp.phylo <- drop.tip(phylo, phylo$tip.label[!phylo$tip.label %in% names(char)])
+  } else {
+    temp.phylo <- phylo
+  }
+  # assume lowest figure is most primitive state
+  as.numeric(unique(char))
+  as.numeric(c("a"))
+}
