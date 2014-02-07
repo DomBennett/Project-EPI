@@ -1,0 +1,379 @@
+Libraries#
+require(ape)#
+require(geiger)#
+#
+## Functions#
+source("readNexusData.R")#
+precedingEdge <- function(phylo, node) {#
+  return (phylo$edge.length[phylo$edge[,2] == node])#
+}#
+addOutgroup <- function(phylo, outgroup.factor = 100) {#
+  # https://stat.ethz.ch/pipermail/r-sig-phylo/2012-November/002417.html#
+  rtt.dist <- mean(diag(vcv.phylo(phylo)))#
+  dist <- rtt.dist/outgroup.factor#
+  edge.matrix <- matrix(c(3,2,3,1), 2, 2, byrow = TRUE)#
+  tip <- list(edge = edge.matrix, tip.label = c("outgroup", "clade.to.be"),#
+              edge.length = c(dist, rtt.dist + dist), Nnode = 1)#
+  class(tip)<-"phylo"#
+  return (bind.tree(tip, phylo, where = 2))#
+}#
+#
+## Dirs#
+input.dir <- "0_data"#
+#
+## Input#
+file <- "mbank_X1766_1-8-2014_922_no_notes.nex"#
+chars <- readNexusData(file.path(input.dir, file))
+file <- "mbank_X1766_1-14-2014_812_no_notes.nex"
+file <- "mbank_X1766_1-14-2014_812_no_notes.nex"
+file <- "mbank_X1766_1-14-2014_812_no_notes.nex"
+chars <- readNexusData(file.path(input.dir, file))
+chars
+19/12/2013#
+## D.J. Bennett#
+## Developing the LFI#
+#
+## Libraries#
+require(ape)#
+require(geiger)#
+#
+## Functions#
+precedingEdge <- function(phylo, node) {#
+  return (phylo$edge.length[phylo$edge[,2] == node])#
+}#
+addOutgroup <- function(phylo, outgroup.factor = 100) {#
+  # https://stat.ethz.ch/pipermail/r-sig-phylo/2012-November/002417.html#
+  rtt.dist <- mean(diag(vcv.phylo(phylo)))#
+  dist <- rtt.dist/outgroup.factor#
+  edge.matrix <- matrix(c(3,2,3,1), 2, 2, byrow = TRUE)#
+  tip <- list(edge = edge.matrix, tip.label = c("outgroup", "clade.to.be"),#
+              edge.length = c(dist, rtt.dist + dist), Nnode = 1)#
+  class(tip)<-"phylo"#
+  return (bind.tree(tip, phylo, where = 2))#
+}#
+#
+## Generating data#
+n <- 20#
+phylo <- sim.bdtree(b = 1, d = 0, n = n)#
+phylo <- addOutgroup(phylo)#
+n.chars <- 100#
+q <- list()#
+for (i in 1:n.chars) {#
+  q <- c(q, list(rbind(c(-0.5, 0.5), c(0.5, -0.5))))#
+}#
+chars <- sim.char(phylo, q, model="discrete")[,,1]#
+#
+## Generate ancestral states#
+phylo <- unroot(phylo)#
+ancestral.states <- list()#
+for (i in 1:ncol(chars)) {#
+  res <- MPR(chars[phylo$tip.label,i], phylo, "outgroup")#
+  # rownames(res) <- as.character(as.numeric(rownames(res)) - 1)#
+  res <- rbind(matrix(rep(chars[ ,i], each = 2), ncol = 2, byrow = TRUE), res)#
+  ancestral.states <- c(ancestral.states, list(res))#
+}#
+#
+## Calculate number of changes for all clades#
+morpho.changes <- list()#
+for (i in 1:length(ancestral.states)) {#
+  character <- ancestral.states[[i]]#
+  nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+  nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+  temp.res <- temp.names <- rep(NA, length(nodes))#
+  for (j in 1:length(nodes)) {#
+    node <- nodes[j]#
+    descendents <- tips(phylo, node)#
+    edges <- which.edge(phylo, descendents)#
+    tot.changes <- 0#
+    for (edge in edges) {#
+      edge <- phylo$edge[edge, ]#
+      start <- character[edge[1], ]#
+      end <- character[edge[2], ]#
+      tot.changes <- (sum(start != end)/2) + tot.changes#
+    }#
+    temp.res[j] <- tot.changes#
+    temp.names[j] <- paste(tips(phylo, node), collapse = "|")#
+  }#
+  names(temp.res) <- temp.names#
+  morpho.changes <- c(morpho.changes, list(temp.res))#
+}#
+phylo <- drop.tip(root(phylo, "outgroup"), "outgroup")#
+#
+## Calc LFI for each node#
+nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+morpho <- time <- n.taxa <- n.changes <- rep(NA, length(nodes))#
+ntips <- length(phylo$tip.label)#
+for (i in 1:length(nodes)) {#
+  node <- nodes[i]#
+  taxa <- paste(tips(phylo, node), collapse = "|")#
+  n.changes[i] <- 0#
+  for (chars in morpho.changes) {#
+    n.changes[i] <- chars[names(chars) == taxa] + n.changes[i]#
+  }#
+  e1 <- precedingEdge(phylo, node)#
+  if (node <= ntips) {#
+    time[i] <- e1#
+    pd <- e1#
+    n.taxa[i] <- 1#
+  } else {#
+    lf.clade <- extract.clade(phylo, node)#
+    e2 <- mean(diag(vcv.phylo(lf.clade)))#
+    time[i] <- e1 + e2#
+    pd <- sum(lf.clade$edge.length) + e1#
+    taxa <- lf.clade$tip.label#
+    n.taxa[i] <- length(taxa)#
+  }#
+  morpho[i] <- n.changes[i]/pd#
+}#
+res <- data.frame(nodes, time, morpho, n.taxa)#
+#
+## Plotting#
+hist(res$time)#
+hist(log(res$morpho))#
+hist(n.taxa)#
+require(scatterplot3d)#
+scatterplot3d(res$time, log(res$morpho), res$n.taxa, highlight.3d = TRUE, pch = 19)#
+plot(res$n.taxa, res$morpho)#
+sd(res$time/sum(res$time))#
+sd(res$morpho/sum(res$morpho)) # morphological change has greatest variance#
+sd(res$n.taxa/sum(res$n.taxa))#
+# I get a dispersion
+scatterplot3d(res$time, log(res$morpho), res$n.taxa, highlight.3d = TRUE, pch = 19)
+plot(res$n.taxa, res$morpho)
+res$morpho
+res$ntaxa
+res$n.taxa
+res
+morpho
+n.changes
+19/12/2013#
+## D.J. Bennett#
+## Developing the LFI#
+#
+## Libraries#
+require(ape)#
+require(geiger)#
+#
+## Functions#
+precedingEdge <- function(phylo, node) {#
+  return (phylo$edge.length[phylo$edge[,2] == node])#
+}#
+addOutgroup <- function(phylo, outgroup.factor = 100) {#
+  # https://stat.ethz.ch/pipermail/r-sig-phylo/2012-November/002417.html#
+  rtt.dist <- mean(diag(vcv.phylo(phylo)))#
+  dist <- rtt.dist/outgroup.factor#
+  edge.matrix <- matrix(c(3,2,3,1), 2, 2, byrow = TRUE)#
+  tip <- list(edge = edge.matrix, tip.label = c("outgroup", "clade.to.be"),#
+              edge.length = c(dist, rtt.dist + dist), Nnode = 1)#
+  class(tip)<-"phylo"#
+  return (bind.tree(tip, phylo, where = 2))#
+}#
+#
+## Generating data#
+n <- 20#
+phylo <- sim.bdtree(b = 1, d = 0, n = n)#
+phylo <- addOutgroup(phylo)#
+n.chars <- 100#
+q <- list()#
+for (i in 1:n.chars) {#
+  q <- c(q, list(rbind(c(-0.5, 0.5), c(0.5, -0.5))))#
+}#
+chars <- sim.char(phylo, q, model="discrete")[,,1]#
+#
+## Generate ancestral states#
+phylo <- unroot(phylo)#
+ancestral.states <- list()#
+for (i in 1:ncol(chars)) {#
+  res <- MPR(chars[phylo$tip.label,i], phylo, "outgroup")#
+  # rownames(res) <- as.character(as.numeric(rownames(res)) - 1)#
+  res <- rbind(matrix(rep(chars[ ,i], each = 2), ncol = 2, byrow = TRUE), res)#
+  ancestral.states <- c(ancestral.states, list(res))#
+}#
+#
+## Calculate number of changes for all clades#
+morpho.changes <- list()#
+for (i in 1:length(ancestral.states)) {#
+  character <- ancestral.states[[i]]#
+  nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+  nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+  temp.res <- temp.names <- rep(NA, length(nodes))#
+  for (j in 1:length(nodes)) {#
+    node <- nodes[j]#
+    descendents <- tips(phylo, node)#
+    edges <- which.edge(phylo, descendents)#
+    tot.changes <- 0#
+    for (edge in edges) {#
+      edge <- phylo$edge[edge, ]#
+      start <- character[edge[1], ]#
+      end <- character[edge[2], ]#
+      tot.changes <- (sum(start != end)/2) + tot.changes#
+    }#
+    temp.res[j] <- tot.changes#
+    temp.names[j] <- paste(tips(phylo, node), collapse = "|")#
+  }#
+  names(temp.res) <- temp.names#
+  morpho.changes <- c(morpho.changes, list(temp.res))#
+}#
+phylo <- drop.tip(root(phylo, "outgroup"), "outgroup")#
+#
+## Calc LFI for each node#
+nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+morpho <- time <- n.taxa <- n.changes <- rep(NA, length(nodes))#
+ntips <- length(phylo$tip.label)#
+for (i in 1:length(nodes)) {#
+  node <- nodes[i]#
+  taxa <- paste(tips(phylo, node), collapse = "|")#
+  n.changes[i] <- 0#
+  for (chars in morpho.changes) {#
+    n.changes[i] <- chars[names(chars) == taxa] + n.changes[i]#
+  }#
+  e1 <- precedingEdge(phylo, node)#
+  if (node <= ntips) {#
+    time[i] <- e1#
+    pd <- e1#
+    n.taxa[i] <- 1#
+  } else {#
+    lf.clade <- extract.clade(phylo, node)#
+    e2 <- mean(diag(vcv.phylo(lf.clade)))#
+    time[i] <- e1 + e2#
+    pd <- sum(lf.clade$edge.length) + e1#
+    taxa <- lf.clade$tip.label#
+    n.taxa[i] <- length(taxa)#
+  }#
+  morpho[i] <- n.changes[i]/pd#
+}#
+res <- data.frame(nodes, time, morpho, n.taxa)#
+#
+## Plotting#
+hist(res$time)#
+hist(log(res$morpho))#
+hist(n.taxa)#
+require(scatterplot3d)#
+scatterplot3d(res$time, log(res$morpho), res$n.taxa, highlight.3d = TRUE, pch = 19)#
+plot(res$n.taxa, res$morpho)#
+sd(res$time/sum(res$time))#
+sd(res$morpho/sum(res$morpho)) # morphological change has greatest variance#
+sd(res$n.taxa/sum(res$n.taxa))#
+# I get a dispersion
+res
+plot(phylo)
+?sim.bdtree
+plot(sim.bdtree())
+19/12/2013#
+## D.J. Bennett#
+## Developing the LFI#
+#
+## Libraries#
+require(ape)#
+require(geiger)#
+#
+## Functions#
+precedingEdge <- function(phylo, node) {#
+  return (phylo$edge.length[phylo$edge[,2] == node])#
+}#
+addOutgroup <- function(phylo, outgroup.factor = 100) {#
+  # https://stat.ethz.ch/pipermail/r-sig-phylo/2012-November/002417.html#
+  rtt.dist <- mean(diag(vcv.phylo(phylo)))#
+  dist <- rtt.dist/outgroup.factor#
+  edge.matrix <- matrix(c(3,2,3,1), 2, 2, byrow = TRUE)#
+  tip <- list(edge = edge.matrix, tip.label = c("outgroup", "clade.to.be"),#
+              edge.length = c(dist, rtt.dist + dist), Nnode = 1)#
+  class(tip)<-"phylo"#
+  return (bind.tree(tip, phylo, where = 2))#
+}#
+#
+## Generating data#
+n <- 200#
+phylo <- sim.bdtree(b = 1, d = 0, n = n)#
+phylo <- addOutgroup(phylo)#
+n.chars <- 100#
+q <- list()#
+for (i in 1:n.chars) {#
+  q <- c(q, list(rbind(c(-0.5, 0.5), c(0.5, -0.5))))#
+}#
+chars <- sim.char(phylo, q, model="discrete")[,,1]#
+#
+## Generate ancestral states#
+phylo <- unroot(phylo)#
+ancestral.states <- list()#
+for (i in 1:ncol(chars)) {#
+  res <- MPR(chars[phylo$tip.label,i], phylo, "outgroup")#
+  # rownames(res) <- as.character(as.numeric(rownames(res)) - 1)#
+  res <- rbind(matrix(rep(chars[ ,i], each = 2), ncol = 2, byrow = TRUE), res)#
+  ancestral.states <- c(ancestral.states, list(res))#
+}#
+#
+## Calculate number of changes for all clades#
+morpho.changes <- list()#
+for (i in 1:length(ancestral.states)) {#
+  character <- ancestral.states[[i]]#
+  nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+  nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+  temp.res <- temp.names <- rep(NA, length(nodes))#
+  for (j in 1:length(nodes)) {#
+    node <- nodes[j]#
+    descendents <- tips(phylo, node)#
+    edges <- which.edge(phylo, descendents)#
+    tot.changes <- 0#
+    for (edge in edges) {#
+      edge <- phylo$edge[edge, ]#
+      start <- character[edge[1], ]#
+      end <- character[edge[2], ]#
+      tot.changes <- (sum(start != end)/2) + tot.changes#
+    }#
+    temp.res[j] <- tot.changes#
+    temp.names[j] <- paste(tips(phylo, node), collapse = "|")#
+  }#
+  names(temp.res) <- temp.names#
+  morpho.changes <- c(morpho.changes, list(temp.res))#
+}#
+phylo <- drop.tip(root(phylo, "outgroup"), "outgroup")#
+#
+## Calc LFI for each node#
+nodes <- 1:(phylo$Nnode + length(phylo$tip.label))#
+nodes <- nodes[-(length(phylo$tip.label) + 1)] # don't need root node#
+morpho <- time <- n.taxa <- n.changes <- rep(NA, length(nodes))#
+ntips <- length(phylo$tip.label)#
+for (i in 1:length(nodes)) {#
+  node <- nodes[i]#
+  taxa <- paste(tips(phylo, node), collapse = "|")#
+  n.changes[i] <- 0#
+  for (chars in morpho.changes) {#
+    n.changes[i] <- chars[names(chars) == taxa] + n.changes[i]#
+  }#
+  e1 <- precedingEdge(phylo, node)#
+  if (node <= ntips) {#
+    time[i] <- e1#
+    pd <- e1#
+    n.taxa[i] <- 1#
+  } else {#
+    lf.clade <- extract.clade(phylo, node)#
+    e2 <- mean(diag(vcv.phylo(lf.clade)))#
+    time[i] <- e1 + e2#
+    pd <- sum(lf.clade$edge.length) + e1#
+    taxa <- lf.clade$tip.label#
+    n.taxa[i] <- length(taxa)#
+  }#
+  morpho[i] <- n.changes[i]/pd#
+}#
+res <- data.frame(nodes, time, morpho, n.taxa)#
+#
+## Plotting#
+hist(res$time)#
+hist(log(res$morpho))#
+hist(n.taxa)#
+require(scatterplot3d)#
+scatterplot3d(res$time, log(res$morpho), res$n.taxa, highlight.3d = TRUE, pch = 19)#
+plot(res$n.taxa, res$morpho)#
+sd(res$time/sum(res$time))#
+sd(res$morpho/sum(res$morpho)) # morphological change has greatest variance#
+sd(res$n.taxa/sum(res$n.taxa))#
+# I get a dispersion
+res
+res$n.taxa != 1
+plot(res$morpho[res$n.taxa != 1], res$n.taxa[res$n.taxa != 1])
+plot(x = res$morpho[res$n.taxa != 1],  y = res$n.taxa[res$n.taxa != 1])
+plot(y = res$morpho[res$n.taxa != 1],  x = res$n.taxa[res$n.taxa != 1])
+scatterplot3d(res$time, log(res$morpho), res$n.taxa, highlight.3d = TRUE, pch = 19)
