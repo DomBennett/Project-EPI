@@ -25,12 +25,14 @@ if (!all (c (phylo$tip.label %in% names (data), names (data) %in% phylo$tip.labe
   stop ("All labels do not match between data and phylogeny.")
 }
 # start with mangeable size
-phylo <- drop.tip (phylo, sample (phylo$tip.label, length (phylo$tip.label) - 10))
-chars <- chars[phylo$tip.label, 1:10]
+#phylo <- drop.tip (phylo, sample (phylo$tip.label, length (phylo$tip.label) - 10))
+#chars <- chars[phylo$tip.label, 1:10]
 if (!is.ultrametric (phylo)) {
   phylo <- multi2di (phylo)
 }
 
 ## Calculate LFI
 reconstruction.obj <- parsimonyReconstruction (chars, phylo)
-branch.changes <- calcBranchChanges (phylo, reconstruction.obj)
+phylo <- calcBranchChanges (phylo, reconstruction.obj)
+plot(phylo)
+edgelabels(text = phylo$edge.changes)

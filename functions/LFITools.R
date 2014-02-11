@@ -73,7 +73,9 @@ addOutgroup <- function (phylo, outgroup.factor = 100) {
   tip <- list (edge = edge.matrix, tip.label = c ("outgroup", "clade.to.be"),
               edge.length = c (dist, rtt.dist + dist), Nnode = 1)
   class (tip) <- "phylo"
-  return (bind.tree (tip, phylo, where = 2))
+  res <- bind.tree (tip, phylo, where = 2)
+  res <- reorder.phylo (res, order = "cladewise")
+  return (res)
 }
 
 parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
@@ -94,7 +96,7 @@ parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
   #if (!is.ultrametric (phylo)) {
   #  stop("Phylogeny must be ultrametric (i.e. w/o polytomies)")
   #}
-  if (all (rownames (chars) %in% phylo$tip.label)) {
+  if (!all (rownames (chars) %in% phylo$tip.label)) {
     stop("Chars must be a matrix w/ its rownames matching tips in phylogeny")
   }
   reconstruction.obj <- list ()
@@ -134,16 +136,21 @@ parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
     }
     # calculate for nodes using parsimony
     res <- MPR (temp.chars[reduced.tree$tip.label], reduced.tree, "outgroup")
+    reduced.tree <- root(reduced.tree, outgroup = "outgroup")
+    reduced.tree <- drop.tip(reduced.tree, tip = 1)
     # add tip node states
     res <- rbind (matrix (rep (temp.chars[reduced.tree$tip.label], each = 2), ncol = 2,
                         byrow = TRUE), res)
+    # node numbers are same as tree with outgroup, but 1 fewer node
+    rownames (res) <- 1:(length (reduced.tree$tip.label) + reduced.tree$Nnode)
     res <- list (res, reduced.tree)
     reconstruction.obj <- c (reconstruction.obj, list (res))
   }
   return (reconstruction.obj)
 }
 
-calcBranchChanges <- function (phylo, reconstruction.obj, as.mean = TRUE, ...) {
+calcBranchChanges <- function (phylo, reconstruction.obj, plot.test = FALSE,
+                               as.list = FALSE, ...) {
   # Count the number of changes that have occured along each branch in phylogeny given
   #  a reconstruction object.
   #
@@ -169,7 +176,7 @@ calcBranchChanges <- function (phylo, reconstruction.obj, as.mean = TRUE, ...) {
     temp.clades <- listClades (reduced.tree)[[1]]
     temp.nodes <- listClades (reduced.tree)[[2]]
     # find shared nodes between phylo and reduced tree
-    clade.index <- matchClades (temp.clades, clades, ...)
+    clade.index <- matchClades (temp.clades, clades)
     edge.store <- edge.score <- vector ()
     for (j in 1:length (clade.index)) {
       if (is.na (clade.index[j])) {
@@ -177,8 +184,8 @@ calcBranchChanges <- function (phylo, reconstruction.obj, as.mean = TRUE, ...) {
       } else {
         edge.store <- c (edge.store, which (reduced.tree$edge[ ,2] == temp.nodes[j]))
         edge <- reduced.tree$edge[edge.store[length (edge.store)], ]
-        start <- character[edge[1], ]
-        end <- character[edge[2], ]
+        start <- node.states[edge[1], ]
+        end <- node.states[edge[2], ]
         if (is.numeric(start)) {
           # for ordered states
           change <- abs (sum (start) - sum (end))/2 
@@ -191,15 +198,26 @@ calcBranchChanges <- function (phylo, reconstruction.obj, as.mean = TRUE, ...) {
         part.res[2, clade.index[j]] <- 1
       }
     }
+    if (plot.test) {
+      plot(reduced.tree, show.tip.label = FALSE, main = paste0 ("Character [", i, "]"))
+      nodelabels(paste("[", node.states[-(1:length(reduced.tree$tip.label)), 1], ",",
+                       node.states[-(1:length(reduced.tree$tip.label)), 2], "]",
+                       sep = ""))
+      tiplabels(node.states[1:length(reduced.tree$tip.label),1], adj = -2)
+      edgelabels(text = edge.score, edge = edge.store, adj = c(0, 1))
+      x <- readline (paste0 ("Character [", i, "]. Press return for next character."))
+    }
     res <- c (res, list (part.res))
   }
-  if (as.mean) {
+  if (!as.list) {
     tot.changes <- rowSums(matrix (unlist (lapply (res, function (x) x [1, ])),
                            nrow = length (clades), byrow = TRUE))
     tot.nchars <- rowSums(matrix (unlist (lapply (res, function (x) x [2, ])),
                                    nrow = length (clades), byrow = TRUE))
-    res <- tot.changes/nchars
-    names (res) <- nodes
+    edge.changes <- tot.changes/tot.nchars
+    edge.changes <- edge.changes[match (nodes, phylo$edge[ ,2])]
+    phylo$edge.changes <- edge.changes
+    res <- phylo
   }
   return (res)
 }
@@ -218,7 +236,8 @@ plotBranchChanges <- function (phylo, node.states, changes) {
   nodelabels(paste("[", node.states[-(1:length(phylo$tip.label)), 1], ",",
                    node.states[-(1:length(phylo$tip.label)), 2], "]", sep = ""))
   tiplabels(node.states[1:length(phylo$tip.label),1], adj = -2)
-  edgelabels(text = changes, edge = names(changes), adj = c(0, 1))
+  edges <- match(as.numeric (names (branch.changes[[1]][1, ])), phylo$edge[ ,2])
+  edgelabels(text = changes, edge = edges, adj = c(0, 1))
 }
   
 
