@@ -8,6 +8,68 @@ require (ape)
 require (geiger)
 
 ## Functions
+nearestNodeDistance <- function(phylo, node, display = FALSE) {
+  # Return the length of the to the next nearest node
+  #
+  # Args:
+  #  phylo: phylogeny (ape class)
+  #  node: the node number in phylo
+  #
+  # Return:
+  #  numeric
+  # find next node one step in
+  inner.node <- phylo$edge[match(node, phylo$edge[,2]),1]
+  # find all nodes and edges descending from inner node
+  d.edges <- which(phylo$edge[,1] %in% inner.node)
+  d.nodes <- phylo$edge[d.edges, 2]
+  # remove starting node
+  nearest.node <- d.nodes[!d.nodes %in% node][1]
+  nearest.node.edge <- d.edges[!d.nodes %in% node][1] #in case of polytomies
+  if (display) {
+    edge.lties <- ifelse(1:nrow(phylo$edge) %in% nearest.node.edge, 1, 3)
+    plot.phylo(phylo, edge.lty = edge.lties, show.tip.label = TRUE)
+    nodelabels("node", node)
+    nodelabels("innernode", inner.node)
+    nodelabels("nextnode", nearest.node)
+  }
+  return(phylo$edge.length[nearest.node.edge])
+}
+
+nodeDescendants <- function(phylo, node, display = FALSE) {
+  # Return the descendant species from a node
+  #
+  # Args:
+  #  phylo: phylogeny (ape class)
+  #  node: the node number in phylo
+  #
+  # Return:
+  #  vector of tip labels
+  if (!is.numeric(node)) {
+    stop("node is not numeric!")
+  }
+  if (node > phylo$Nnode + length(phylo$tip.label)) {
+    stop("node is greater than the number of nodes in phylo!")
+  }
+  if (node <= length(phylo$tip.label)) {
+    term.nodes <- node
+  } else {
+    term.nodes <- vector()
+    temp.nodes <- node
+    while (length(temp.nodes) > 0) {
+      connecting.nodes <- phylo$edge[phylo$edge[,1] %in% temp.nodes, 2]
+      term.nodes <- c(term.nodes, connecting.nodes[connecting.nodes <= length(phylo$tip.label)])
+      temp.nodes <- connecting.nodes[connecting.nodes > length(phylo$tip.label)]
+    }
+  }
+  descendants <- phylo$tip.label[term.nodes]
+  if (display) {
+    tip.cols <- ifelse(phylo$tip.label %in% descendants, "black", "grey")
+    plot.phylo(phylo, tip.color = tip.cols, show.tip.label = TRUE)
+    nodelabels("node", node)
+  }
+  return (descendants)  
+}
+
 listClades <- function (phylo) {
   # List all descendants of each node in phylogeny.
   #
@@ -160,7 +222,7 @@ calcBranchChanges <- function (phylo, reconstruction.obj, plot.test = FALSE,
   #   estimates of node states and a reduced phylogeny (i.e. return from
   #   parsominyReconstruction)
   #  as.mean: return a vector for the mean change per branch, or a list for each change
-  #   per character per branch (default true)
+  #   per character per branch (default true) (patristic dissimilarity)
   #
   # Returns:
   #  vector or list
@@ -241,9 +303,44 @@ plotBranchChanges <- function (phylo, node.states, changes) {
 }
   
 
-calcLFI <- function (phylo, branch.changes) {
+calcLFI <- function (phylo) {
   # Calculate a living fossil index based on branch changes
-  return (NA)
+  #
+  # Args:
+  #  phylo: phylogeny with edge.changes
+  #
+  # Return:
+  #  data.frame with LFI metrics
+  if (is.null (phylo$edge.change)) {
+    stop ("Phylo class has no edge.changes.")
+  }
+  # make branch lengths relative to total tree size
+  phylo$edge.length <- phylo$edge.length / sum (phylo$edge.length)
+  node <- clade <- n <- nnnd <- s.edge.length <- s.edge.change <- d.edge.length <-
+    d.edge.change <- time <- rep (NA, nrow (phylo$edge))
+  for (i in 1:nrow (phylo$edge)) {
+    node[i] <- phylo$edge[i,2]
+    descendants <- nodeDescendants(phylo, node[i])
+    temp.edges <- extractEdges(phylo, descendants, type = 3)
+    clade[i] <- paste(descendants, collapse = "|")
+    n[i] <- length(descendants)
+    s.edge.length[i] <- phylo$edge.length[i]
+    s.edge.change[i] <- phylo$edge.change[i]
+    nnnd[i] <- nearestNodeDistance(phylo, node[i])
+    if (n[i] < 2) {
+      d.edge.length[i] <- 0
+      d.edge.change[i] <- 0
+      time[i] <- phylo$edge.length[i]
+    } else {
+      lf.clade <- extract.clade(phylo, node[i])
+      rtt <- mean(diag(vcv.phylo(lf.clade)))
+      time[i] <- phylo$edge.length[i] + rtt
+      d.edge.length[i] <- sum (phylo$edge.length[temp.edges])
+      d.edge.change[i] <- sum (phylo$edge.change[temp.edges])
+    }
+  }
+  return (data.frame (node, clade, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
+                        d.edge.change, time))
 }
 
 plotLFI <- function (phylo, lfi.res) {

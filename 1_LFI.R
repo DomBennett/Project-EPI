@@ -1,6 +1,5 @@
 ## No copyright, no warranty
 ## Dominic John Bennett
-## Automated calculation of LFI from Dryad data
 ## 07/02/2014
 ## TODO: Generate a random distribution of phylogenies to account for polytomies
 
@@ -34,5 +33,63 @@ if (!is.ultrametric (phylo)) {
 ## Calculate LFI
 reconstruction.obj <- parsimonyReconstruction (chars, phylo)
 phylo <- calcBranchChanges (phylo, reconstruction.obj)
-plot(phylo)
-edgelabels(text = phylo$edge.changes)
+plot (phylo)
+edgelabels (text = phylo$edge.changes)
+lfi.data <- calcLFI (phylo)
+
+## Testing Metrics
+# function
+lfiChecker <- function (time, change, ep, model = 1) {
+  hist(time)
+  hist(change)
+  hist(ep)
+  if (model == 1) {
+    lfi <- time / change * ep
+  } else if (model == 2) {
+    lfi <- time / (change + ep)
+  } else {
+    stop ("Invalid model number")
+  }
+  plot(time ~ lfi)
+  abline (lm (time ~ lfi))
+  plot(change ~ lfi)
+  abline (lm (change ~ lfi))
+  plot(ep ~ lfi)
+  abline (lm (ep ~ lfi))
+  lfi
+}
+## Metric 1
+#time <- lfi.data$time
+#change <- lfi.data$s.edge.change + lfi.data$d.edge.change
+#ep <- lfi.data$d.edge.length
+#lfiChecker (time, change + 1, ep + 1, model = 1)
+
+## Metric 1 (logged)
+#time <- lfi.data$time
+#change <- log (lfi.data$s.edge.change + lfi.data$d.edge.change + 1)
+#ep <- log (lfi.data$d.edge.length + 1)
+#lfiChecker (time, change, ep, model = 1) # produces NaNs because of 0s
+
+## Metric 1 (sqrt)
+#time <- lfi.data$time
+#change <- sqrt (lfi.data$s.edge.change + lfi.data$d.edge.change)
+#ep <- sqrt (lfi.data$d.edge.length)
+#lfiChecker (time, change, ep, model = 1)
+
+## Metric 1 (reset to 1 as min)
+time <- lfi.data$time
+change <- lfi.data$s.edge.change + lfi.data$d.edge.change
+change <- change + (1 - min (change))
+ep <- lfi.data$d.edge.length
+ep <- ep  + (1 - min (ep))
+lfi <- lfiChecker (time, change, ep, model = 1)
+
+## Exploring LFI
+hist (lfi)
+lfi.data$lfi <- lfi
+cutoff <- quantile (lfi, probs = 0.95)
+abline (v = cutoff, col = "red")
+living.fossils <- lfi.data[lfi > cutoff, ]
+living.fossils <- living.fossils[order (living.fossils$lfi), ]
+plot (phylo)
+nodelables (text = living.fossils$lfi, node = living.fossils$node)
