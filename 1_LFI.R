@@ -15,25 +15,39 @@ if (!file.exists (output.dir)) {
 }
 
 ## Import data (not automated...)
+# Ladybird
 data <- read.nexus.data (file.path (input.dir, "ladybird_matrix.nex"))
 data <- lapply (data, function (x) x[2254:2365])
 chars <- matrix (unlist (data), nrow = length (data), byrow = TRUE)
 rownames (chars) <- names (data)
 phylo <- read.nexus (file.path (input.dir, "ladybird_tree.nex"))[[1]]
-if (!all (c (phylo$tip.label %in% names (data), names (data) %in% phylo$tip.label))) {
+# Mammal
+#data <- read.delim (file.path (input.dir, "panTHERIA.txt"), na.strings = -999,
+#                    stringsAsFactors = FALSE)
+#chars <- data[ ,- c (1:5,36:55)]
+#rownames (chars) <- data[ ,"MSW93_Binomial"]
+#phylo <- read.tree (file.path (input.dir, "bininda.txt"))
+#phylo$tip.label <- sub ("_", " ", phylo$tip.label)
+#chars <- chars[rownames (chars) %in% phylo$tip.label, ]
+if (!any (phylo$tip.label %in% rownames (chars))) {
+  phylo <- drop.tip (phylo,
+                     tip = phylo$tip.label[!phylo$tip.label %in% rownames (chars)])
+}
+if (!all (c (phylo$tip.label %in% rownames (chars),
+             rownames (chars) %in% phylo$tip.label))) {
   stop ("All labels do not match between data and phylogeny.")
 }
 # start with mangeable size
 #phylo <- drop.tip (phylo, sample (phylo$tip.label, length (phylo$tip.label) - 10))
 #chars <- chars[phylo$tip.label, 1:10]
-if (!is.ultrametric (phylo)) {
+if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
 }
 
 ## Calculate LFI
-reconstruction.obj <- parsimonyReconstruction (chars, phylo)
+reconstruction.obj <- parsimonyReconstruction (chars, phylo, missing.char = NA)
 phylo <- calcBranchChanges (phylo, reconstruction.obj)
-plot (phylo)
+1plot (phylo)
 edgelabels (text = phylo$edge.changes)
 lfi.data <- calcLFI (phylo)
 
@@ -92,4 +106,4 @@ abline (v = cutoff, col = "red")
 living.fossils <- lfi.data[lfi > cutoff, ]
 living.fossils <- living.fossils[order (living.fossils$lfi), ]
 plot (phylo)
-nodelables (text = living.fossils$lfi, node = living.fossils$node)
+nodelabels (text = round (living.fossils$lfi, digits = 3), node = living.fossils$node)
