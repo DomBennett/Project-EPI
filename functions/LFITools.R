@@ -140,8 +140,8 @@ addOutgroup <- function (phylo, outgroup.factor = 100) {
   return (res)
 }
 
-parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
-                                        order.numeric = TRUE) {
+parsimonyReconstruction <- function (chars, phylo, order.numeric = TRUE,
+                                     min.n = 3) {
   # Return upper and lower character states for all nodes in phylogeny for a list of
   #  characters using parsimony. Where missing data occur, the phylogeny is reduced by
   #  dropping tips. The ancestral character is determined as the most primitive state
@@ -150,8 +150,8 @@ parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
   # Args:
   #  chars: matrix with species names as rows and character states as columns
   #  phylo: phylogeny (ape class)
-  #  missing.char: symbol for missing data (default "?")
   #  order.numeric: if true, assumes all numeric characters are ordered
+  #  min.n: the minimum number of species with character data
   #
   # Returns:
   #  list of node states and reduced phylogeny for each character (reconstruction.obj)
@@ -164,9 +164,13 @@ parsimonyReconstruction <- function (chars, phylo, missing.char = "?",
   reconstruction.obj <- list ()
   for (i in 1:ncol (chars)) {
     temp.chars <- chars[phylo$tip.label,i]
-    tips.to.drop <- names (temp.chars)[temp.chars == missing.char]
-    temp.chars <- temp.chars[temp.chars != missing.char]
-    if (length (tips.to.drop) > 0) {
+    names (temp.chars) <- phylo$tip.label
+    tips.to.drop <- names (temp.chars)[is.na (temp.chars)]
+    temp.chars <- temp.chars[!is.na (temp.chars)]
+    if ((length (phylo$tip.label) - length (tips.to.drop)) < min.n) {
+      print ( paste0 ("Dropping [", i, "th] character -- too many missing values"))
+      next
+    } else if (length (tips.to.drop) > 0) {
       reduced.tree <- drop.tip (phylo, tips.to.drop)
     } else {
       reduced.tree <- phylo
@@ -298,7 +302,7 @@ plotBranchChanges <- function (phylo, node.states, changes) {
   nodelabels(paste("[", node.states[-(1:length(phylo$tip.label)), 1], ",",
                    node.states[-(1:length(phylo$tip.label)), 2], "]", sep = ""))
   tiplabels(node.states[1:length(phylo$tip.label),1], adj = -2)
-  edges <- match(as.numeric (names (branch.changes[[1]][1, ])), phylo$edge[ ,2])
+  edges <- match(as.numeric (names (changes[[1]][1, ])), phylo$edge[ ,2])
   edgelabels(text = changes, edge = edges, adj = c(0, 1))
 }
   
@@ -314,8 +318,6 @@ calcLFI <- function (phylo) {
   if (is.null (phylo$edge.change)) {
     stop ("Phylo class has no edge.changes.")
   }
-  # make branch lengths relative to total tree size
-  phylo$edge.length <- phylo$edge.length / sum (phylo$edge.length)
   node <- clade <- n <- nnnd <- s.edge.length <- s.edge.change <- d.edge.length <-
     d.edge.change <- time <- rep (NA, nrow (phylo$edge))
   for (i in 1:nrow (phylo$edge)) {
@@ -341,6 +343,23 @@ calcLFI <- function (phylo) {
   }
   return (data.frame (node, clade, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
                         d.edge.change, time))
+}
+
+lfiChecker <- function (time, change, performance) {
+  hist(time)
+  hist(change)
+  hist(performance)
+  lfi <- 0.5 + (time - ((change + performance) / 2))
+  plot(time ~ lfi)
+  abline (lm (time ~ lfi))
+  plot(change ~ lfi)
+  abline (lm (change ~ lfi))
+  plot(performance ~ lfi)
+  abline (lm (performance ~ lfi))
+  hist (lfi)
+  cutoff <- quantile (lfi, probs = 0.95)
+  abline (v = cutoff, col = "red")
+  lfi
 }
 
 plotLFI <- function (phylo, lfi.res) {
