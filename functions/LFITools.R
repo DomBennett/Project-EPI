@@ -215,95 +215,104 @@ parsimonyReconstruction <- function (chars, phylo, order.numeric = TRUE,
   return (reconstruction.obj)
 }
 
-calcBranchChanges <- function (phylo, reconstruction.obj, plot.test = FALSE,
-                               as.list = FALSE, ...) {
+calcEdgeChanges <- function (phylo, reconstruction.obj) {
   # Count the number of changes that have occured along each branch in phylogeny given
-  #  a reconstruction object.
+  #  a reconstruction object using patristic distance.
   #
   # Args:
   #  phylo: full phylogeny (ape class)
   #  reconstruction.obj: a list for multiple characters containing a matrix of upper and lower
   #   estimates of node states and a reduced phylogeny (i.e. return from
   #   parsominyReconstruction)
-  #  as.mean: return a vector for the mean change per branch, or a list for each change
-  #   per character per branch (default true) (patristic dissimilarity)
   #
   # Returns:
-  #  vector or list
-  clades <- listClades (phylo)[[1]]
-  nodes <- listClades (phylo)[[2]]
-  res <- list()
-  for (i in 1:length (reconstruction.obj)) {
-    node.states <- reconstruction.obj[[i]][[1]]
-    reduced.tree <- reconstruction.obj[[i]][[2]]
-    part.res <- matrix (rep (0, length (clades) * 2), nrow = 2)
-    rownames (part.res) <- c("Change", "Node.presence")
-    colnames (part.res) <- nodes
-    temp.clades <- listClades (reduced.tree)[[1]]
-    temp.nodes <- listClades (reduced.tree)[[2]]
-    # find shared nodes between phylo and reduced tree
-    clade.index <- matchClades (temp.clades, clades)
-    edge.store <- edge.score <- vector ()
-    for (j in 1:length (clade.index)) {
-      if (is.na (clade.index[j])) {
+  #  phylo with two new factors: edge.changes (mean changes per edge) and edge.change.obj
+  # Internal functions
+  calcEachPhylo <- function (part.reconstruction.obj) { # For each phylo + char
+    calcEachEdge <- function (i, part.res) { # For each edge
+      if (is.na (clade.index[i])) {
         next
       } else {
-        edge.store <- c (edge.store, which (reduced.tree$edge[ ,2] == temp.nodes[j]))
-        edge <- reduced.tree$edge[edge.store[length (edge.store)], ]
+        corres.node <- which (reduced.tree$edge[ ,2] == temp.nodes[i])
+        part.res[1, clade.index[i]] <- corres.node
+        edge <- reduced.tree$edge[corres.node, ]
         start <- node.states[edge[1], ]
         end <- node.states[edge[2], ]
-        if (is.numeric(start)) {
+        if (is.numeric (start)) {
           # for ordered states
           change <- abs (sum (start) - sum (end))/2 
         } else {
           # for unordered states
           change <- sum (start != end)/2
         }
-        edge.score <- c (edge.score, change)
-        part.res[1, clade.index[j]] <- change
-        part.res[2, clade.index[j]] <- 1
+        part.res[2, clade.index[i]] <- change
+        part.res
       }
     }
-    if (plot.test) {
-      plot(reduced.tree, show.tip.label = FALSE, main = paste0 ("Character [", i, "]"))
-      nodelabels(paste("[", node.states[-(1:length(reduced.tree$tip.label)), 1], ",",
-                       node.states[-(1:length(reduced.tree$tip.label)), 2], "]",
-                       sep = ""))
-      tiplabels(node.states[1:length(reduced.tree$tip.label),1], adj = -2)
-      edgelabels(text = edge.score, edge = edge.store, adj = c(0, 1))
-      x <- readline (paste0 ("Character [", i, "]. Press return for next character."))
-    }
-    res <- c (res, list (part.res))
+    node.states <- part.reconstruction.obj[[1]]
+    reduced.tree <- part.reconstruction.obj[[2]]
+    # Creating a matrix that will record the changes for each reduced tree where nodes are
+    #  shared
+    part.res <- matrix (rep (0, length (clades) * 2), nrow = 2)
+    rownames (part.res) <- c ("Corresponding node", "Change")
+    colnames (part.res) <- nodes
+    temp.clades <- listClades (reduced.tree)[[1]]
+    temp.nodes <- listClades (reduced.tree)[[2]]
+    # find shared nodes between phylo and reduced tree
+    clade.index <- matchClades (temp.clades, clades)
+    res <- sapply (1:length (clade.index), calcEachEdge, part.res, simplify = FALSE)
+    res
   }
-  if (!as.list) {
-    tot.changes <- rowSums(matrix (unlist (lapply (res, function (x) x [1, ])),
-                           nrow = length (clades), byrow = TRUE))
-    tot.nchars <- rowSums(matrix (unlist (lapply (res, function (x) x [2, ])),
-                                   nrow = length (clades), byrow = TRUE))
-    edge.changes <- tot.changes/tot.nchars
-    edge.changes <- edge.changes[match (nodes, phylo$edge[ ,2])]
-    phylo$edge.changes <- edge.changes
-    res <- phylo
-  }
-  return (res)
+  clades <- listClades (phylo)[[1]]
+  nodes <- listClades (phylo)[[2]]
+  # Calculate each change for each edge
+  res <- sapply (reconstruction.obj, calcEachPhylo, simplify = FALSE)
+  # Combine the matrices calculated for each edge for each phylo + char
+  res <- lapply(res, function (x) Reduce ('+', x))
+  edge.change.obj <- sapply (1:length (res),
+                             function (x) c (reconstruction.obj[[x]], list (res[[x]])), 
+                             simplify = FALSE)
+  # Calculate mean changes for each branch across all chars
+  tot.changes <- rowSums(matrix (unlist (lapply (res, function (x) x [2, ])),
+                                 nrow = length (clades), byrow = TRUE))
+  tot.nchars <- rowSums(matrix (unlist (lapply (res, function (x) x [1, ] != 0)),
+                                nrow = length (clades), byrow = TRUE))
+  # Append results to phylo object
+  edge.changes <- tot.changes/tot.nchars
+  edge.changes <- edge.changes[match (nodes, phylo$edge[ ,2])]
+  phylo$edge.changes <- edge.changes
+  phylo$edge.change.obj <- edge.change.obj
+  phylo
 }
 
-plotBranchChanges <- function (phylo, node.states, changes) {
-  # Plot phylogeny with character labels on tips, edges and nodes
+plotEdgeChanges <- function (phylo, by.char = FALSE) {
+  # Plot phylogeny with character labels on tips, edges and nodes (for sanity checking)
   #
   # Args:
-  #  phylo: phylogeny (ape class)
-  #  node.states: matrix, upper and lower bound estimate for each node
-  #  changes: changes for each edge
+  #  phylo: phylogeny (ape class) with edge.changes and edge.change.obj
   #
   # Returns:
   #  None
-  plot(phylo, show.tip.label = FALSE, no.margin = TRUE)
-  nodelabels(paste("[", node.states[-(1:length(phylo$tip.label)), 1], ",",
-                   node.states[-(1:length(phylo$tip.label)), 2], "]", sep = ""))
-  tiplabels(node.states[1:length(phylo$tip.label),1], adj = -2)
-  edges <- match(as.numeric (names (changes[[1]][1, ])), phylo$edge[ ,2])
-  edgelabels(text = changes, edge = edges, adj = c(0, 1))
+  if (by.char) {
+    for (i in 1:length (phylo$edge.change.obj)) {
+      node.states <- phylo$edge.change.obj[[i]][[1]]
+      reduced.tree <- phylo$edge.change.obj[[i]][[2]]
+      edge.changes <- phylo$edge.change.obj[[i]][[3]]
+      edge.scores <- edge.changes[2, edge.changes[1, ] != 0]
+      corres.edges <- edge.changes[1, edge.changes[1, ] != 0]
+      plot (reduced.tree, show.tip.label = FALSE, main = paste0 ("Character [", i, "]"))
+      nodelabels (paste("[", node.states[-(1:length (reduced.tree$tip.label)), 1], ",",
+                       node.states[-(1:length (reduced.tree$tip.label)), 2], "]",
+                       sep = ""))
+      tiplabels (node.states[1:length(reduced.tree$tip.label),1], adj = -2)
+      edgelabels (text = edge.scores, edge = corres.edges, adj = c(0, 1))
+      x <- readline (paste0 ("Character [", i,
+                            "]. Press return for next character or Esc to exit."))
+    }
+  } else {
+    plot (phylo, main = "Mean number of changes by branch")
+    edgelabels (text = round (phylo$edge.changes, 2))
+  }
 }
   
 
@@ -315,7 +324,7 @@ calcLFI <- function (phylo) {
   #
   # Return:
   #  data.frame with LFI metrics
-  if (is.null (phylo$edge.change)) {
+  if (is.null (phylo$edge.changes)) {
     stop ("Phylo class has no edge.changes.")
   }
   node <- clade <- n <- nnnd <- s.edge.length <- s.edge.change <- d.edge.length <-
@@ -327,7 +336,7 @@ calcLFI <- function (phylo) {
     clade[i] <- paste(descendants, collapse = "|")
     n[i] <- length(descendants)
     s.edge.length[i] <- phylo$edge.length[i]
-    s.edge.change[i] <- phylo$edge.change[i]
+    s.edge.change[i] <- phylo$edge.changes[i]
     nnnd[i] <- nearestNodeDistance(phylo, node[i])
     if (n[i] < 2) {
       d.edge.length[i] <- 0
@@ -338,7 +347,7 @@ calcLFI <- function (phylo) {
       rtt <- mean(diag(vcv.phylo(lf.clade)))
       time[i] <- phylo$edge.length[i] + rtt
       d.edge.length[i] <- sum (phylo$edge.length[temp.edges])
-      d.edge.change[i] <- sum (phylo$edge.change[temp.edges])
+      d.edge.change[i] <- sum (phylo$edge.changes[temp.edges])
     }
   }
   return (data.frame (node, clade, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
