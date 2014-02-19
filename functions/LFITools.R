@@ -209,7 +209,13 @@ parsimonyReconstruction <- function (chars, phylo, order.numeric = TRUE,
                         byrow = TRUE), res)
     # node numbers are same as tree with outgroup, but 1 fewer node
     rownames (res) <- 1:(length (reduced.tree$tip.label) + reduced.tree$Nnode)
-    res <- list (res, reduced.tree)
+    if (!is.null (colnames (chars))) {
+      res <- list (node.states = res, reduced.tree = reduced.tree,
+                   character.name = names (chars)[i])
+    } else {
+      res <- list (node.states = res, reduced.tree = reduced.tree,
+                   character.name = paste0 ("Character [", i,"]"))
+    }
     reconstruction.obj <- c (reconstruction.obj, list (res))
   }
   return (reconstruction.obj)
@@ -249,8 +255,11 @@ calcEdgeChanges <- function (phylo, reconstruction.obj) {
         part.res
       }
     }
-    node.states <- part.reconstruction.obj[[1]]
-    reduced.tree <- part.reconstruction.obj[[2]]
+    node.states <- part.reconstruction.obj[['node.states']]
+    reduced.tree <- part.reconstruction.obj[['reduced.tree']]
+    # Calculate progress
+    char.i <- which (part.reconstruction.obj[['character.name']] == character.names)
+    print (paste0 ("[", signif (char.i * 100 / nchar, digits = 2), "%] ..."))
     # Creating a matrix that will record the changes for each reduced tree where nodes are
     #  shared
     part.res <- matrix (rep (0, length (clades) * 2), nrow = 2)
@@ -266,11 +275,14 @@ calcEdgeChanges <- function (phylo, reconstruction.obj) {
   clades <- listClades (phylo)[[1]]
   nodes <- listClades (phylo)[[2]]
   # Calculate each change for each edge
+  nchar <- length (reconstruction.obj)
+  character.names <- unlist (lapply (reconstruction.obj, function (x) x[['character.name']]))
   res <- sapply (reconstruction.obj, calcEachPhylo, simplify = FALSE)
   # Combine the matrices calculated for each edge for each phylo + char
   res <- lapply(res, function (x) Reduce ('+', x))
   edge.change.obj <- sapply (1:length (res),
-                             function (x) c (reconstruction.obj[[x]], list (res[[x]])), 
+                             function (x) c (reconstruction.obj[[x]],
+                                             list (changes = res[[x]])), 
                              simplify = FALSE)
   # Calculate mean changes for each branch across all chars
   tot.changes <- rowSums(matrix (unlist (lapply (res, function (x) x [2, ])),
@@ -295,12 +307,13 @@ plotEdgeChanges <- function (phylo, by.char = FALSE) {
   #  None
   if (by.char) {
     for (i in 1:length (phylo$edge.change.obj)) {
-      node.states <- phylo$edge.change.obj[[i]][[1]]
-      reduced.tree <- phylo$edge.change.obj[[i]][[2]]
-      edge.changes <- phylo$edge.change.obj[[i]][[3]]
+      node.states <- phylo$edge.change.obj[[i]][['node.states']]
+      reduced.tree <- phylo$edge.change.obj[[i]][['reduced.tree']]
+      edge.changes <- phylo$edge.change.obj[[i]][['changes']]
+      character.name <- phylo$edge.change.obj[[i]][['character.name']]
       edge.scores <- edge.changes[2, edge.changes[1, ] != 0]
       corres.edges <- edge.changes[1, edge.changes[1, ] != 0]
-      plot (reduced.tree, show.tip.label = FALSE, main = paste0 ("Character [", i, "]"))
+      plot (reduced.tree, show.tip.label = FALSE, main = character.name)
       nodelabels (paste("[", node.states[-(1:length (reduced.tree$tip.label)), 1], ",",
                        node.states[-(1:length (reduced.tree$tip.label)), 2], "]",
                        sep = ""))
