@@ -12,4 +12,7 @@ figure
 dev
 *~
 .Rproj.user
-.RData
+
+# Data output
+*.RData
+*.csv
