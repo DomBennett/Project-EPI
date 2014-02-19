@@ -9,7 +9,7 @@ source (file.path ("Functions", "EcoDataTools.R"))
 
 ## Directories
 input.dir <- "0_data"
-output.dir <- "1_LFI"
+output.dir <- "1_measures"
 if (!file.exists (output.dir)) {
   dir.create (output.dir)
 }
@@ -51,27 +51,12 @@ if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
 }
 
-## Calculate LFI
+## Calculate LFI.data
 reconstruction.obj <- parsimonyReconstruction (chars, phylo)
-phylo <- calcBranchChanges (phylo, reconstruction.obj, plot.test = FALSE)
-plot (phylo)
-edgelabels (text = phylo$edge.changes)
+phylo <- calcEdgeChanges (phylo, reconstruction.obj)
+#plotEdgeChanges (phylo, by.char = TRUE)
 lfi.data <- calcLFI (phylo)
 
-## Testing Metrics
-
-## Metric 1 (rescale to 0-1)
-# removing big clades
-#lfi.data <- lfi.data[lfi.data$n < 40, ]
-time <- lfi.data$time / max (lfi.data$time)
-change <- lfi.data$s.edge.change + lfi.data$d.edge.change
-change <- change / max (change)
-performance <- lfi.data$d.edge.length
-performance <- performance / max (performance)
-lfi <- lfiChecker (time, change, performance)
-
-## Exploring LFI
-living.fossils <- lfi.data[lfi > cutoff, ]
-living.fossils <- living.fossils[order (living.fossils$lfi, decreasing = TRUE), ]
-plot (phylo)
-nodelabels (text = round (living.fossils$lfi, digits = 3), node = living.fossils$node)
+## Output LFI.data
+write.csv (x = lfi.data, file = file.path (output.dir, "measures.csv"), row.names = FALSE)
+save (phylo, file = file.path (output.dir, "PhyloMeasures.RData"))
