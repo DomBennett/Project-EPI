@@ -4,8 +4,9 @@
 ## TODO: Generate a random distribution of phylogenies to account for polytomies
 
 ## Libraries
-source (file.path ("Functions", "LFITools.R"))
-source (file.path ("Functions", "EcoDataTools.R"))
+cat ("Loading libraries ...\n")
+source (file.path ("functions", "LFITools.R"))
+source (file.path ("functions", "EcoDataTools.R"))
 
 ## Directories
 input.dir <- "0_data"
@@ -15,6 +16,7 @@ if (!file.exists (output.dir)) {
 }
 
 ## Import data (not automated...)
+cat ("Importing data ...\n")
 # Ladybird
 #data <- read.nexus.data (file.path (input.dir, "ladybird_matrix.nex"))
 #data <- lapply (data, function (x) x[2254:2365])
@@ -52,11 +54,15 @@ if (!is.binary.tree (phylo)) {
 }
 
 ## Calculate LFI.data
+cat ("Estimating node states ...\n")
 reconstruction.obj <- parsimonyReconstruction (chars, phylo)
+cat ("Calculating edge changes ...\n")
 phylo <- calcEdgeChanges (phylo, reconstruction.obj)
 #plotEdgeChanges (phylo, by.char = TRUE)
+cat ("Calculating LFI measures ...\n")
 lfi.data <- calcLFI (phylo)
 
 ## Output LFI.data
+cat ("Outputting ...\n")
 write.csv (x = lfi.data, file = file.path (output.dir, "measures.csv"), row.names = FALSE)
 save (phylo, file = file.path (output.dir, "PhyloMeasures.RData"))

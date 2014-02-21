@@ -168,7 +168,7 @@ parsimonyReconstruction <- function (chars, phylo, order.numeric = TRUE,
     tips.to.drop <- names (temp.chars)[is.na (temp.chars)]
     temp.chars <- temp.chars[!is.na (temp.chars)]
     if ((length (phylo$tip.label) - length (tips.to.drop)) < min.n) {
-      print ( paste0 ("Dropping [", i, "th] character -- too many missing values"))
+      cat ( paste0 ("Dropping [", i, "th] character -- too many missing values\n"))
       next
     } else if (length (tips.to.drop) > 0) {
       reduced.tree <- drop.tip (phylo, tips.to.drop)
@@ -259,7 +259,7 @@ calcEdgeChanges <- function (phylo, reconstruction.obj) {
     reduced.tree <- part.reconstruction.obj[['reduced.tree']]
     # Calculate progress
     char.i <- which (part.reconstruction.obj[['character.name']] == character.names)
-    print (paste0 ("[", signif (char.i * 100 / nchar, digits = 2), "%] ..."))
+    cat (paste0 ("[", signif (char.i * 100 / nchar, digits = 2), "%] ...\n"))
     # Creating a matrix that will record the changes for each reduced tree where nodes are
     #  shared
     part.res <- matrix (rep (0, length (clades) * 2), nrow = 2)
