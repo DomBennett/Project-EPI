@@ -367,19 +367,19 @@ calcLFI <- function (phylo) {
                         d.edge.change, time))
 }
 
-lfiChecker <- function (time, change, performance) {
+lfiChecker <- function (time, change, performance, cut) {
   hist(time)
   hist(change)
   hist(performance)
-  lfi <- 0.5 + (time - ((change + performance) / 2))
+  lfi <- time - ((change + performance) / 2)
   plot(time ~ lfi)
-  abline (lm (time ~ lfi))
+  abline (lm (time ~ lfi), col = "red")
   plot(change ~ lfi)
-  abline (lm (change ~ lfi))
+  abline (lm (change ~ lfi), col = "red")
   plot(performance ~ lfi)
-  abline (lm (performance ~ lfi))
+  abline (lm (performance ~ lfi), col = "red")
   hist (lfi)
-  cutoff <- quantile (lfi, probs = 0.95)
+  cutoff <- quantile (lfi, probs = cut)
   abline (v = cutoff, col = "red")
   lfi
 }
