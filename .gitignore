@@ -16,3 +16,6 @@ dev
 # Data output
 *.RData
 *.csv
+
+# Misc
+*.xlsx
