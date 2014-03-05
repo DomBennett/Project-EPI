@@ -101,20 +101,32 @@ matchClades <- function (qclades, sclades, exact = FALSE) {
   # Returns:
   #  vector of query node numbers
   if (exact) {
-    return (match (qclades, sclades))
+    res <- match (qclades, sclades)
+    res <- res[!is.na (res)]
+    res
   } else {
-    subFunction <- function (qclade, clades) {
-      scores <- unlist (lapply (clades, function (x) sum (qclade %in% x)))
+    partMatch <- function (clade, clades) {
+      scores <- unlist (lapply (clades, function (x) sum (clade %in% x)))
       if (sum (scores) == 0) {
-        return (NA)
+        NA
       } else {
-        res <- clades[scores == max (scores)]
-        len.res <- sapply (res, length)
-        res <- res[len.res == min (len.res)]
-        return (match (res, clades))
+        matching.clades <- clades[scores == max (scores)]
+        matching.pos <- which(scores == max (scores))
+        matching.sizes <- sapply (matching.clades, length)
+        # smallest clade with all members is best match
+        best.match <- matching.pos[matching.sizes == min (matching.sizes)]
+        best.match
       }
     }
-    return (unlist (lapply (qclades, subFunction, clades = sclades)))
+    # Before partial matching, some time saving steps:
+    # 1. find identical matches
+    res <- match (qclades, sclades)
+    unresolved.qclades <- qclades[which(is.na (res))]
+    # 2. Replace resolved clades with NA
+    sclades[res[!is.na (res)]] <- NA
+    part.res <- unlist (lapply (unresolved.qclades, partMatch, clades = sclades))
+    res[is.na (res)] <- part.res
+    res
   }
 }
 
@@ -236,24 +248,20 @@ calcEdgeChanges <- function (phylo, reconstruction.obj) {
   # Internal functions
   calcEachPhylo <- function (part.reconstruction.obj) { # For each phylo + char
     calcEachEdge <- function (i, part.res) { # For each edge
-      if (is.na (clade.index[i])) {
-        next
+      corres.node <- which (reduced.tree$edge[ ,2] == temp.nodes[i])
+      part.res[1, clade.index[i]] <- corres.node
+      edge <- reduced.tree$edge[corres.node, ]
+      start <- node.states[edge[1], ]
+      end <- node.states[edge[2], ]
+      if (is.numeric (start)) {
+        # for ordered states
+        change <- abs (sum (start) - sum (end))/2 
       } else {
-        corres.node <- which (reduced.tree$edge[ ,2] == temp.nodes[i])
-        part.res[1, clade.index[i]] <- corres.node
-        edge <- reduced.tree$edge[corres.node, ]
-        start <- node.states[edge[1], ]
-        end <- node.states[edge[2], ]
-        if (is.numeric (start)) {
-          # for ordered states
-          change <- abs (sum (start) - sum (end))/2 
-        } else {
-          # for unordered states
-          change <- sum (start != end)/2
-        }
-        part.res[2, clade.index[i]] <- change
-        part.res
+        # for unordered states
+        change <- sum (start != end)/2
       }
+      part.res[2, clade.index[i]] <- change
+      part.res
     }
     node.states <- part.reconstruction.obj[['node.states']]
     reduced.tree <- part.reconstruction.obj[['reduced.tree']]
@@ -279,18 +287,20 @@ calcEdgeChanges <- function (phylo, reconstruction.obj) {
   character.names <- unlist (lapply (reconstruction.obj, function (x) x[['character.name']]))
   res <- sapply (reconstruction.obj, calcEachPhylo, simplify = FALSE)
   # Combine the matrices calculated for each edge for each phylo + char
-  res <- lapply(res, function (x) Reduce ('+', x))
+  res <- lapply (res, function (x) Reduce ('+', x))
   edge.change.obj <- sapply (1:length (res),
                              function (x) c (reconstruction.obj[[x]],
                                              list (changes = res[[x]])), 
                              simplify = FALSE)
   # Calculate mean changes for each branch across all chars
-  tot.changes <- rowSums(matrix (unlist (lapply (res, function (x) x [2, ])),
-                                 nrow = length (clades), byrow = TRUE))
-  tot.nchars <- rowSums(matrix (unlist (lapply (res, function (x) x [1, ] != 0)),
-                                nrow = length (clades), byrow = TRUE))
+  tot.changes <- rowSums (matrix (unlist (lapply (res, function (x) x [2, ])),
+                                  nrow = length (clades)))
+  tot.nchars <- rowSums (matrix (unlist (lapply (res, function (x) x [1, ] != 0)),
+                                 nrow = length (clades)))
   # Append results to phylo object
   edge.changes <- tot.changes/tot.nchars
+  cat (paste0 ("... [", sum (is.na (edge.changes)), "] of [", length (edge.changes),
+               "] edges with missing data.\n" ))
   edge.changes <- edge.changes[match (nodes, phylo$edge[ ,2])]
   phylo$edge.changes <- edge.changes
   phylo$edge.change.obj <- edge.change.obj
@@ -329,14 +339,14 @@ plotEdgeChanges <- function (phylo, by.char = FALSE) {
 }
   
 
-calcLFI <- function (phylo) {
-  # Calculate a living fossil index based on branch changes
+calcLFIMeasures <- function (phylo) {
+  # Calculate a living fossil measures based on branch changes
   #
   # Args:
   #  phylo: phylogeny with edge.changes
   #
   # Return:
-  #  data.frame with LFI metrics
+  #  data.frame with LFI measures
   if (is.null (phylo$edge.changes)) {
     stop ("Phylo class has no edge.changes.")
   }
