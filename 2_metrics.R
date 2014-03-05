@@ -3,7 +3,7 @@
 ## 25/02/2014
 
 ## Directories
-input.dir <- "1_measures/ladybird"
+input.dir <- "1_measures/mammal"
 output.dir <- "2_metrics"
 if (!file.exists (output.dir)) {
   dir.create (output.dir)
@@ -18,7 +18,7 @@ source (file.path ("functions", "LFITools.R"))
 source (file.path ("functions", "EcoDataTools.R"))
 
 ## Sanity check
-#load (file.path (input.dir, "PhyloMeasures.RData"))
+load (file.path (input.dir, "PhyloMeasures.RData"))
 #plotEdgeChanges (phylo,by.char=TRUE)
 #phylo$edge.change.obj <- NULL
 
@@ -33,9 +33,10 @@ measures <- na.omit (measures)
 # removing big clades
 #measures <- measures[measures$n < 40, ]
 time <- measures$time / max (measures$time)
-change <- measures$s.edge.change + measures$d.edge.change
+change <- (measures$s.edge.change + measures$d.edge.change) /
+  (measures$s.edge.length + measures$d.edge.length)
 change <- change / max (change)
-performance <- measures$d.edge.length
+performance <- measures$n
 performance <- performance / max (performance)
 lfi <- lfiChecker (time, change, performance, cut = 0.99)
 
