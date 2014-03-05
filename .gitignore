@@ -13,9 +13,8 @@ dev
 *~
 .Rproj.user
 
-# Data output
+# Data
 *.RData
 *.csv
-
-# Misc
+raw
 *.xlsx
