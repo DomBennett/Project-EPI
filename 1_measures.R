@@ -17,7 +17,7 @@ if (!file.exists (output.dir)) {
 
 ## Import data (not automated...)
 cat ("Importing data ...\n")
-load (file.path(input.dir, "mammal.RData")) # or ladybird
+load (file.path(input.dir, "ladybird.RData")) # or ladybird
 phylo <- data[["phylo"]]
 chars <- data[["chars"]]
 rm (data)
