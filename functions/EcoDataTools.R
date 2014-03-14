@@ -11,6 +11,42 @@ library(RCurl) ##GET and POST to URL queries functionality
 library(apTreeshape) # randI
 
 ## Dom's Functions:
+phyloNavigate <- function(phylo, tip, window.size = 50) {
+  # Plot a subsection of a large phylogeny, allow user to move up and down tree.
+  #
+  # Args:
+  #  phylo: phylogeny (ape class)
+  #  tip: focal tip around which section of tree will be selected
+  #  window.size: the number of species in the tree
+  #
+  # Returns:
+  #  None
+  tip.i <- which (phylo$tip.label == tip)
+  while (TRUE) {
+    n <- round ((window.size - 1) / 2)
+    if ((tip.i + n) > length (phylo$tip.label)) {
+      sample.names <- phylo$tip.label[(length (phylo$tip.label) - round (n * 2)):length (phylo$tip.label)]
+    } else if ((tip.i - n) < 1) {
+      sample.names <- phylo$tip.label[1:round (n * 2)]
+    } else {
+      sample.names <- phylo$tip.label[(tip.i - n):(tip.i + n)]
+    }
+    sample.names <- sample.names[!duplicated (sample.names)]
+    sampled.tree <- drop.tip (phylo, phylo$tip.label[!phylo$tip.label %in% sample.names])
+    tip.cols <- ifelse (sampled.tree$tip.label %in% tip, "black", "grey")
+    plot.phylo (sampled.tree, tip.color = tip.cols, show.tip.label = TRUE, no.margin = TRUE)
+    user.command <- readline ("Type \"u\" or \"d\" to go up and down and hit return. Else hit Esc to exit.")
+    if (user.command == "u") {
+      tip.i <- tip.i + 1
+    } else if (user.command == "d") {
+      tip.id <- tip.i - 1
+    } else {
+      stop ("Undefined user command.")
+    }
+    tip <- phylo$tip.label[tip.i]
+  }
+}
+
 nearestNodeLength <- function(phylo, node, display = FALSE) {
   # Return the length of the to the next nearest node
   #
