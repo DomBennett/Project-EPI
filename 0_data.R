@@ -48,5 +48,9 @@ for (i in 1:ncol (chars)) {
 rownames (chars) <- data[ ,"MSW93_Binomial"]
 rownames (chars) <- sub (" ", "_", rownames (chars))
 phylo <- read.tree (file.path (input.dir, "bininda.txt"))
+if (!is.binary.tree (phylo)) {
+  phylo <- multi2di (phylo)
+  phylo$edge.length[phylo$edge.length < 0.1] <- median (phylo$edge.length)
+}
 data <- matchPhyChar (phylo, chars)
 save (data, file = file.path (output.dir, "mammal.RData"))
