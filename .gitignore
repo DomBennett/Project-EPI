@@ -12,6 +12,7 @@ figure
 dev
 *~
 .Rproj.user
+test*
 
 # Data
 *.RData
