@@ -34,25 +34,18 @@ measures <- na.omit (measures)
 ## Metric 1 (rescale to 0-1)
 # removing big clades
 #measures <- measures[measures$n < 40, ]
+measures <- measures[measures$s.edge.change > 0.01,]
 time <- measures$time / max (measures$time)
-change <- (measures$s.edge.change + measures$d.edge.change) /
-  (measures$s.edge.length + measures$d.edge.length)
-measures[which(change == max(change)),]
-
-plot(density(change))
-measures[which(change > 1),]
-
-hist(measures$s.edge.change + measures$d.edge.change)
-hist(measures$s.edge.length + measures$d.edge.length)
-
-
-change <- change / max (change)
+tot.changes <- log ((measures$s.edge.change + measures$d.edge.change) + 1)
+tot.edge.length <- log ((measures$s.edge.length + measures$d.edge.length) + 1)
+change <- log((tot.changes/tot.edge.length)+1)
+change <- change/max (change)
 performance <- log (measures$n)
 performance <- performance / max (performance)
 lfi <- lfiChecker (time, change, performance, cut = 0.99)
 
 ## Exploring LFI
-cutoff <- quantile (lfi, probs = 0.99)
+#cutoff <- quantile (lfi, probs = 0.99)
 measures$lfi <- lfi
 living.fossils <- data.frame (names = measures$clade, n = measures$n, time, change, performance, lfi)
 living.fossils <- living.fossils[order (lfi, decreasing = TRUE), ]
