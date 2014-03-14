@@ -17,16 +17,13 @@ if (!file.exists (output.dir)) {
 
 ## Import data (not automated...)
 cat ("Importing data ...\n")
-load (file.path(input.dir, "ladybird.RData")) # or ladybird
+load (file.path(input.dir, "mammal.RData")) # or ladybird
 phylo <- data[["phylo"]]
 chars <- data[["chars"]]
 rm (data)
 # start with mangeable size
 #phylo <- drop.tip (phylo, sample (phylo$tip.label, length (phylo$tip.label) - 1000))
 #chars <- chars[phylo$tip.label,]
-if (!is.binary.tree (phylo)) {
-  phylo <- multi2di (phylo)
-}
 
 ## Calculate LFI.data
 cat ("Estimating node states ...\n")
