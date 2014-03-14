@@ -78,57 +78,49 @@ listClades <- function (phylo) {
   #  phylo: phylogeny (ape class)
   #
   # Returns:
-  #  list of list of clades and node number
+  #  list of list of clades and node number ordered by clade size
   nodes <- 1:(phylo$Nnode + length (phylo$tip.label))
   nodes <- nodes[-(length (phylo$tip.label) + 1)]
   clades <- list()
   for (node in nodes) {
     clades <- c (clades, list (tips(phylo, node)))
   }
-  return (list (clades, nodes))
+  sizes <- ldply (.data = clades, .fun = length)[ ,1]
+  clades <- clades[order (sizes, decreasing = TRUE)]
+  nodes <- nodes[order (sizes, decreasing = TRUE)]
+  list (clades, nodes)
 }
-
-matchClades <- function (qclades, sclades, exact = FALSE) {
+  
+matchClades <- function (q.clade.node, s.clade.node) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.
   #
   # Args:
-  #  qclades: query clades, a list of clades, the clades to be mapped to the subject clades
-  #  sclades: subject clades
-  #  exact: if true, nodes will be mapped to one another if they have all of the same
-  #   descendants. If false, nodes will be mapped if descedants are missing to allow for 
-  #   missing taxa (i.e. smallest node with all the same descendants).
+  #  q.clade.node: result from listClades for query phylogeny
+  #  s.clade.node: subject
   #
   # Returns:
-  #  vector of query node numbers
-  if (exact) {
-    res <- match (qclades, sclades)
-    res <- res[!is.na (res)]
-    res
-  } else {
-    partMatch <- function (clade, clades) {
-      scores <- unlist (lapply (clades, function (x) sum (clade %in% x)))
-      if (sum (scores) == 0) {
-        NA
-      } else {
-        matching.clades <- clades[scores == max (scores)]
-        matching.pos <- which(scores == max (scores))
-        matching.sizes <- sapply (matching.clades, length)
-        # smallest clade with all members is best match
-        best.match <- matching.pos[matching.sizes == min (matching.sizes)]
-        best.match
-      }
+  #  list of subject node numbers in order of query nodes
+  s.clade.env <- new.env ()
+  local (s.clades <- s.clade.node[[1]], env = s.clade.env)
+  local (s.nodes <- s.clade.node[[2]],  env = s.clade.env)
+  matchQCladeInSClades <- local (function (q.clade) {
+    compClades <- function (s.clade) {
+      sum (q.clade %in% s.clade) / length (q.clade)
     }
-    # Before partial matching, some time saving steps:
-    # 1. find identical matches
-    res <- match (qclades, sclades)
-    unresolved.qclades <- qclades[which(is.na (res))]
-    # 2. Replace resolved clades with NA
-    sclades[res[!is.na (res)]] <- NA
-    part.res <- unlist (lapply (unresolved.qclades, partMatch, clades = sclades))
-    res[is.na (res)] <- part.res
-    res
-  }
+    match.scores <- ldply (.data = s.clades, .fun = compClades)[ ,1]
+    match.bool <- match.scores == max(match.scores) & match.scores > 0
+    res <- s.nodes[match.bool]
+    s.clades <<- s.clades[!match.bool]
+    s.nodes <<- s.nodes[!match.bool]
+    if (length (res) == 0) {
+      NA
+    } else {
+      res
+    }
+  }, env = s.clade.env)
+  res <- llply (.data = q.clade.node[[1]], .fun = matchQCladeInSClades)
+  res
 }
 
 addOutgroup <- function (phylo, outgroup.factor = 100) {
@@ -243,47 +235,65 @@ calcEdgeChanges <- function (f.phylo, reconstruction.obj, weight.by.edge = TRUE)
   #  reconstruction.obj: a list for multiple characters containing a matrix of upper and lower
   #   estimates of node states and a reduced phylogeny (i.e. return from
   #   parsominyReconstruction)
+  #  weight.by.edge: if true, changes that have occurred for multiple possible branches in the full
+  #   tree will be mapped on to the full tree in proportion to their branch length. Else, the change
+  #   is equally divided between all possible branches. Default true.
   #
   # Returns:
   #  phylo with new factor: edge.changes (mean changes per edge)
   # Internal functions
-  calcEachPhylo <- function (part.reconstruction.obj) {
-    calcEachEdge <- function (f.node, r.node) {
-      for (each in f.node) { # for multiple possible matching f.nodes
-        connecting.node <- which (r.phylo$edge[ ,2] == r.node)
-        edge <- r.phylo$edge[connecting.node, ]
-        start <- r.node.states[edge[1], ]
-        end <- r.node.states[edge[2], ]
-        if (is.numeric (start)) { # for ordered states
-          change <- abs (sum (start) - sum (end))/2 
-        } else { # for unordered states
-          change <- sum (start != end)/2
-        }
-        if (weight.by.edge) {
-          edge.length <- f.phylo$edge.length[which (f.phylo$edge[ ,2] == each)]
-          change <- change/edge.length
-        } else {
-          change <- change/length(f.node)
-        }
+  mapOnFPhylo <- function (r.res, matching.f.nodes, weight.by.edge) {
+    calcEdgeLengthProps <- function (f.nodes) {
+      if (length (f.nodes) == 1) {
+        return (1)
+      }
+      res <- rep (NA, length (f.nodes))
+      for (i in 1:length (f.nodes)) {
+        res[i] <- f.phylo$edge.length[which (f.phylo$edge[ ,2] == f.nodes[i])]
+      }
+      return (res / sum (res))
+    }
+    eachRNode <- function (i) {
+      f.node <- matching.f.nodes[[i]]
+      change <- rep (r.res[['change']][i], length (f.node))
+      r.node <- rep (r.res[['r.node']][i], length (f.node))
+      if (weight.by.edge) {
+        change <- change*calcEdgeLengthProps (f.node)
+      } else {
+        change <- change/length (f.node)
+      }
+      data.frame (f.node, r.node, change)
+    }
+    res <- mdply (.data = data.frame (i = 1:nrow (r.res)), .fun = eachRNode)
+    res
+  }
+  calcEachRPhylo <- function (part.reconstruction.obj) {
+    calcEachRPhyloEdge <- function (r.node) {
+      connecting.node <- which (r.phylo$edge[ ,2] == r.node)
+      edge <- r.phylo$edge[connecting.node, ]
+      start <- r.node.states[edge[1], ]
+      end <- r.node.states[edge[2], ]
+      if (is.numeric (start)) { # for ordered states
+        change <- abs (sum (start) - sum (end))/2 
+      } else { # for unordered states
+        change <- sum (start != end)/2
       }
       change
     }
     r.node.states <- part.reconstruction.obj[['node.states']]
     r.phylo <- part.reconstruction.obj[['reduced.tree']]
     r.clade.node <- listClades (r.phylo)
-    r.clades <- r.clade.node[[1]]
     r.nodes <- r.clade.node[[2]]
-    # find shared nodes between full and reduced trees
-    rf.match <- matchClades (r.clades, f.clades)
-    res <- mdply (data.frame (r.node = r.nodes,
-                              f.node = rf.match), calcEachEdge)
-    names (res)[3] <- "change"
+    r.res <- mdply (data.frame (r.node = r.nodes), calcEachRPhyloEdge)
+    names (r.res)[2] <- "change"
+    matching.f.nodes <- matchClades (r.clade.node, f.clade.node)
+    res <- mapOnFPhylo (r.res, matching.f.nodes, weight.by.edge = TRUE)
     res
   }
   f.clade.node <- listClades (f.phylo)
   f.clades <- f.clade.node[[1]]
   f.nodes <- f.clade.node[[2]]
-  res <- ldply (.data = reconstruction.obj, .fun = calcEachPhylo,
+  res <- ldply (.data = reconstruction.obj, .fun = calcEachRPhylo,
                 .progress = create_progress_bar (name = "time"))
   # Calculate mean change for each edge across all chars
   edge.changes <- ddply (.data = res, .variables = .(f.node), .fun = summarize,
