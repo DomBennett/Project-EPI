@@ -201,12 +201,19 @@ parsimonyReconstruction <- function (chars, phylo, order.numeric = TRUE,
       reduced.tree <- addOutgroup (reduced.tree)
       temp.chars <- c (temp.chars, sample (temp.chars, 1))
       names (temp.chars)[length (temp.chars)] <- "outgroup"
+      uchars <- sort (unique (temp.chars))
+      temp.chars.char <- temp.chars
+      temp.chars <- sapply (temp.chars, FUN = function (x) match (x, uchars))
     }
     if (is.rooted (reduced.tree)) {
       reduced.tree <- unroot (reduced.tree)
     }
     # calculate for nodes using parsimony
     res <- MPR (temp.chars[reduced.tree$tip.label], reduced.tree, "outgroup")
+    if (!order.numeric | non.numeric.chars) {
+      res <- matrix (sapply (res, function (x) uchars[x]), ncol = 2)
+      colnames (res) <- c('upper', 'lower')
+    }
     reduced.tree <- root(reduced.tree, outgroup = "outgroup")
     reduced.tree <- drop.tip(reduced.tree, tip = 1)
     # add tip node states
@@ -351,11 +358,12 @@ calcLFIMeasures <- function (phylo) {
     descendants <- nodeDescendants(phylo, node)
     temp.edges <- extractEdges(phylo, descendants, type = 3)
     clade <- paste(descendants, collapse = "|")
-    n <- length(descendants)
+    n <- length (descendants)
+    #n <- sum (phylo$scope[phylo$tip.label %in% descendants])
     s.edge.length <- phylo$edge.length[i]
     s.edge.change <- phylo$edge.changes[i]
     nnnd <- nearestNodeDistance(phylo, node)
-    if (n < 2) {
+    if (length (descendants) < 2) {
       d.edge.length <- 0
       d.edge.change <- 0
       time <- phylo$edge.length[i]
