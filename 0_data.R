@@ -4,13 +4,29 @@
 
 ## Libraries
 require (ape)
+require (plyr)
+source ("functions/ReadNexusData.R")
 
 ## Functions
+calcScope <- function (r.phylo.names, f.phylo) {
+  calcEachScope <- function (i) {
+    r.phylo.dists <- abs (vcv (r.phylo, corr = TRUE) - 1)
+    r.dists.i <- r.phylo.dists[i, -i]
+    f.dists.i <- f.phylo.dists[i, -i]
+    r.nn <- names (which (r.dists.i == min (r.dists.i)))[1]
+    length (f.dists.i[f.dists.i < f.dists.i[names (f.dists.i) == r.nn]]) + 1
+  }
+  r.phylo <- drop.tip (f.phylo, tip = f.phylo$tip.label[!f.phylo$tip.label %in% r.phylo.names])
+  f.phylo.dists <- abs (vcv (f.phylo, corr = TRUE) - 1)
+  r.phylo$scope <- mdply (.data = data.frame (i = 1: length (r.phylo$tip.label)),
+                          .fun = calcEachScope)[ ,1]
+  r.phylo
+}
+
 matchPhyChar <- function (phylo, chars) {
   chars <- chars[rownames (chars) %in% phylo$tip.label, ]
-  if (!any (phylo$tip.label %in% rownames (chars))) {
-    phylo <- drop.tip (phylo,
-                       tip = phylo$tip.label[!phylo$tip.label %in% rownames (chars)])
+  if (!all (phylo$tip.label %in% rownames (chars))) {
+    phylo <- calcScope (rownames (chars), phylo)
   }
   if (!all (c (phylo$tip.label %in% rownames (chars),
                rownames (chars) %in% phylo$tip.label))) {
@@ -38,19 +54,23 @@ save (data, file = file.path (output.dir, "ladybird.RData"))
 ## Mammal (http://esapubs.org/archive/ecol/e090/184/)
 data <- read.delim (file.path (input.dir, "panTHERIA.txt"), na.strings = -999,
                     stringsAsFactors = FALSE)
-chars <- data[ ,- c (1:5,36:55)]
-for (i in 1:ncol (chars)) {
-  temp.chars <- chars[!is.na (chars[ , i]),i]
+pantheria <- data[ ,- c (1:5,36:55)]
+for (i in 1:ncol (pantheria)) {
+  temp.chars <- pantheria[!is.na (pantheria[ , i]),i]
   if (length (unique (temp.chars)) > 10) {
-    chars[!is.na (chars[ , i]),i] <- cut(temp.chars, 10)
+    pantheria[!is.na (pantheria[ , i]),i] <- cut(temp.chars, 10)
   }
 }
-rownames (chars) <- data[ ,"MSW93_Binomial"]
-rownames (chars) <- sub (" ", "_", rownames (chars))
+rownames (pantheria) <- data[ ,"MSW93_Binomial"]
+rownames (pantheria) <- sub (" ", "_", rownames (pantheria))
+file <- "morpho_matrix_forR.nex"
+oleary <- readNexusData (file.path (input.dir, file))
+chars <- merge (oleary, pantheria, by = 0, all = TRUE)
+rownames (chars) <- c (rownames (oleary) [!rownames (oleary) %in% rownames (pantheria)], rownames (pantheria))
 phylo <- read.tree (file.path (input.dir, "bininda.txt"))
+chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
-  phylo$edge.length[phylo$edge.length < 0.1] <- median (phylo$edge.length)
 }
-data <- matchPhyChar (phylo, chars)
+data <- list (phylo = phylo, chars = chars)
 save (data, file = file.path (output.dir, "mammal.RData"))
