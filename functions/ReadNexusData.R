@@ -129,7 +129,7 @@ readNexusData <- function(file) {
   }
   # read in data
   data <- scan(file = file, what = character(), sep = "\n", quiet = TRUE, 
-               strip.white = TRUE, quote = '\'')
+               strip.white = TRUE, quote = '\'', encoding = "UTF-8")
   # extract blocks from nexus
   taxa.block <- getBlock(block.header = 'BEGIN TAXA', data)
   char.block <- getBlock(block.header = 'BEGIN CHARACTERS', data)
