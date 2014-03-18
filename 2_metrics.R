@@ -34,7 +34,7 @@ measures <- na.omit (measures)
 ## Metric 1 (rescale to 0-1)
 # removing big clades
 #measures <- measures[measures$n < 40, ]
-measures <- measures[measures$s.edge.change > 0.01,]
+#measures <- measures[measures$s.edge.change > 0.01,]
 time <- measures$time / max (measures$time)
 tot.changes <- log ((measures$s.edge.change + measures$d.edge.change) + 1)
 tot.edge.length <- log ((measures$s.edge.length + measures$d.edge.length) + 1)
