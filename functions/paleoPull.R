@@ -2,6 +2,7 @@
 library(stringr)
 library(plyr)
 library(RJSONIO)
+library (ape)
 
 taxaNames <- function(name, return.method, full.details = TRUE, limit = 10){
   # Search taxomnomic names in paleoDB
