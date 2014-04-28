@@ -497,15 +497,15 @@ extractEdges <- function(phylo, taxa, type = 1) {
   # Extract edges from a phylo object using 1 of 3 methods
   #
   # Args:
-  #  phylo: phylogeny (ape class)
-  #  taxa: vector of taxon names
-  #  type:
-  #     1 -- phylogeny consisting solely of the taxa, default
-  #     2 -- edges from taxon tips to terminal node
-  #     3 -- edges unique to taxa
+  # phylo: phylogeny (ape class)
+  # taxa: vector of taxon names
+  # type:
+  # 1 -- phylogeny consisting solely of the taxa, default
+  # 2 -- edges from taxon tips to terminal node
+  # 3 -- edges unique to taxa
   #
   # Return:
-  #  vector of edges
+  # vector of edges
   # TODO(01/07/2013): this may be more achievable with a vegan matrix
   if (!type %in% c(1,2,3)) {
     stop("Type must be an integer: 1, 2 or 3.")
@@ -564,7 +564,7 @@ extractEdges <- function(phylo, taxa, type = 1) {
     }
     return (edges)
   }
-}
+  }
 
 commPD <- function(phylo, comm.data, type = 1, min.spp = 2,
                    taxon.names = colnames(comm.data)) {
