@@ -3,7 +3,7 @@
 ## 25/02/2014
 
 ## Directories
-input.dir <- "1_measures"
+input.dir <- "1_measures/mammal_all"
 output.dir <- "2_metrics"
 if (!file.exists (output.dir)) {
   dir.create (output.dir)
@@ -24,6 +24,7 @@ load (file.path (input.dir, "PhyloMeasures.RData"))
 
 ## Reading in measures
 measures <- read.csv (file.path (input.dir, "measures.csv"), stringsAsFactors = FALSE)
+measures <- measures[ ,names (measures) != 'sd.ED']
 cat (paste0 ("[", sum (complete.cases (measures)), "] of [", nrow (measures),
              "] with complete data ... \n"))
 max(measures$n)
@@ -35,13 +36,20 @@ measures <- na.omit (measures)
 # removing big clades
 #measures <- measures[measures$n < 40, ]
 #measures <- measures[measures$s.edge.change > 0.01,]
-time <- measures$time / max (measures$time)
-tot.changes <- log ((measures$s.edge.change + measures$d.edge.change) + 1)
-tot.edge.length <- log ((measures$s.edge.length + measures$d.edge.length) + 1)
-change <- log((tot.changes/tot.edge.length)+1)
-change <- change/max (change)
-performance <- log (measures$n)
+# time <- measures$mean.ED
+# time <- time / max (time)
+# change <- measures$change
+# change <- change/max (change)
+# performance <- measures$n
+# performance <- performance / max (performance)
+# lfi <- lfiChecker (time, change, performance, cut = 0.99)
+
+time <- log (measures$contrast.ED)
+time <- time / max (time)
+performance <- log (measures$contrast.n)
 performance <- performance / max (performance)
+change <- log (measures$contrast.change)
+change <- change/max (change)
 lfi <- lfiChecker (time, change, performance, cut = 0.99)
 
 ## Exploring LFI
@@ -78,3 +86,4 @@ for (comp in comparisons) {
         rownames (pca.rot[comp[1]]), adj = 1)
   prop.var <- prop.var[-c(1,2)]
 }
+
