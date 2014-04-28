@@ -9,6 +9,57 @@ require (geiger)
 require (plyr)
 
 ## Functions
+calcFairProportion <- function (phylo) {
+  countDescendants <- function (node) {
+    length (nodeDescendants (phylo, node))
+  }
+  calcSpecies <- function (sp) {
+    edges <- extractEdges (phylo, as.character (sp), type = 2)
+    n.descs = mdply (.data = data.frame (node = phylo$edge[edges, 2]),
+                     .fun = countDescendants)[ ,2]
+    sum (phylo$edge.length[edges]/n.descs)
+  }
+  EDs <- mdply (.data = data.frame (sp = phylo$tip.label),
+                .fun = calcSpecies, .progress = create_progress_bar (name = "time"))
+  EDs
+}
+
+findSisterNode <- function (phylo, node) {
+  inner.node <- phylo$edge[match(node, phylo$edge[,2]),1]
+  # find all nodes and edges descending from inner node
+  d.edges <- which(phylo$edge[,1] %in% inner.node)
+  d.nodes <- phylo$edge[d.edges, 2]
+  # remove starting node
+  nearest.node <- d.nodes[!d.nodes %in% node][1]
+  nearest.node
+}
+
+getEdges <- function (phylo, node) {
+  ## Find all edges from given node to tips
+  edges <- c ()
+  while (TRUE) {
+    bool <- phylo$edge[ ,1] %in% node
+    if (sum (bool) > 1) {
+      node <- phylo$edge[bool, 2]
+      edges <- c (edges, which (bool))
+    } else {
+      break
+    }
+  }
+  edges
+}
+
+getNodes <- function (phylo, node) {
+  ## Find all nodes from given node to root
+  base.node <- length (phylo$tip.label) + 1
+  nodes <- c ()
+  while (node != base.node) {
+    node <- phylo$edge[phylo$edge[ ,2] == node,1]
+    nodes <- c (nodes, node)
+  }
+  nodes
+}
+
 nearestNodeDistance <- function(phylo, node, display = FALSE) {
   # Return the length of the to the next nearest node
   #
@@ -353,6 +404,7 @@ calcLFIMeasures <- function (phylo) {
   if (is.null (phylo$edge.changes)) {
     stop ("Phylo class has no edge.changes.")
   }
+  EDs <- evol.distinct (phylo, type = "fair.proportion")
   calcEachNode <- function (i) {
     node <- phylo$edge[i,2]
     descendants <- nodeDescendants(phylo, node)
@@ -366,19 +418,29 @@ calcLFIMeasures <- function (phylo) {
     if (length (descendants) < 2) {
       d.edge.length <- 0
       d.edge.change <- 0
-      time <- phylo$edge.length[i]
+      time.split <- phylo$edge.length[i]
     } else {
       lf.clade <- extract.clade(phylo, node)
       rtt <- mean(diag(vcv.phylo(lf.clade)))
-      time <- phylo$edge.length[i] + rtt
+      time.split <- phylo$edge.length[i] + rtt
       # Only sum comparable edges -- i.e. those with change
       temp.edge.changes <- phylo$edge.changes[temp.edges]
       comp.edges <- temp.edges[which (!is.na (temp.edge.changes))]
       d.edge.change <- sum (phylo$edge.changes[comp.edges])
       d.edge.length <- sum (phylo$edge.length[comp.edges])
     }
-    data.frame (node, clade, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
-                d.edge.change, time)
+    mean.change <- (s.edge.change + d.edge.change)/s.edge.length + d.edge.length
+    mean.ED <- mean (EDs[descendants])
+    sd.ED <- sd (EDs[descendants])
+    sister.node <- findSisterNode (phylo, node)
+    data.frame (node, clade, sister.node, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
+                d.edge.change, time.split, mean.change, mean.ED, sd.ED)
+  }
+  addSisterContrasts <- function (i) {
+    sister.node <- res[i,'sister.node']
+    sister.i <- which (res$node == sister.node)
+    contrast.change <- res$change[i]/res$change[sister.i]
+    contrast.n <- res$n[i]/res$n[sister.i]
   }
   res <- mdply (.data = data.frame (i = 1:nrow (phylo$edge)), .fun = calcEachNode)
   res[ ,-1]
