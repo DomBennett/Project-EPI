@@ -74,8 +74,8 @@ nearestNodeLength <- function(phylo, node, display = FALSE) {
   return(phylo$edge.length[nearest.node.edge])
 }
 
-nodeDescendents <- function(phylo, node, display = FALSE) {
-  # Return the descendent species from a node
+nodeDescendants <- function(phylo, node, display = FALSE) {
+  # Return the descendant species from a node
   #
   # Args:
   #  phylo: phylogeny (ape class)
@@ -100,13 +100,13 @@ nodeDescendents <- function(phylo, node, display = FALSE) {
       temp.nodes <- connecting.nodes[connecting.nodes > length(phylo$tip.label)]
     }
   }
-  descendents <- phylo$tip.label[term.nodes]
+  descendants <- phylo$tip.label[term.nodes]
   if (display) {
-    tip.cols <- ifelse(phylo$tip.label %in% descendents, "black", "grey")
+    tip.cols <- ifelse(phylo$tip.label %in% descendants, "black", "grey")
     plot.phylo(phylo, tip.color = tip.cols, show.tip.label = TRUE)
     nodelabels("node", node)
   }
-  return (descendents)  
+  return (descendants)  
 }
 
 deg2dec <- function(data) {
