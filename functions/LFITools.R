@@ -9,6 +9,317 @@ require (geiger)
 require (plyr)
 
 ## Functions
+safeFromJSON <- function (url, max.trys = 10) {
+  # Wrapper for fromJSON
+  trys <- 0
+  while (trys < max.trys) {
+    json.obj <- try (fromJSON(url)[[1]], silent = TRUE)
+    if (class(json.obj) == 'try-error') {
+      cat ('---- Connection failed: trying again ----\n')
+      trys <- trys + 1
+      Sys.sleep (10)
+    } else {
+      return (json.obj)
+    }
+  }
+  stop ("Failed to connect, server may be down.")
+}
+
+findParent <- function (name) {
+  # Pull lineage for a fossil record
+  extractRankNumber <- function (rec) {
+    if (rec$sta == "belongs to") {
+      return (rec$rnk)
+    }
+  }
+  extractNames <- function (rec) {
+    if (rec$sta == "belongs to") {
+      return (rec$nam)
+    }
+  }
+  url <- "http://paleobiodb.org/data1.1/taxa/"
+  url <- paste0(url, "list.json?name=", name, "&rel=all_parents")
+  json.obj <- safeFromJSON (url)
+  if (length (json.obj) > 0) {
+    return (rev (ldply (.data = json.obj, .fun = extractNames)[ ,1])) # returned in order
+  } else {
+    return (c ())
+  }
+}
+
+findClade <- function (lineages) {
+  for (i in length (lineages[[1]]):1) {
+    subj <- lineages[[1]][i]
+    j <- 2
+    while (TRUE) {
+      if (j > length (lineages)) {
+        success <- TRUE
+        break
+      }
+      query <- lineages[[j]]
+      if (subj %in% query) {
+        j <- j + 1
+      } else {
+        success <- FALSE
+        break
+      }
+    }
+    if (success) {
+      return (subj)
+    }
+  }
+  NA
+}
+
+labelNodes <- function (phylo) {
+  # Use GNR to label all nodes in a phylogeny
+  taxa.res <- taxaResolve (phylo$tip.label)
+  nodes <- 1:(length (phylo$tip.label) + phylo$Nnode)
+  node.label <- rep (FALSE, length (nodes))
+  node.label[1:length (phylo$tip.label)] <-
+    unlist(lapply (strsplit(phylo$tip.label, " "), function (x) x[1]))
+  for (i in (length (phylo$tip.label) + 1):length (nodes)) {
+    descendants <- nodeDescendants(phylo, node = i)
+    genus.names <- unlist(lapply (strsplit(descendants, " "), function (x) x[1]))
+    if (all (genus.names == genus.names[1])) {
+      node.label[i] <- genus.names[1]
+    } else {
+      lineages <- as.character (taxa.res[taxa.res$search.name %in% descendants, "lineage"])
+      lineages <- strsplit (lineages, "\\|")
+      lineages <- lineages[!is.na (lineages)]
+      if (length (lineages) > 0) {
+        node.label[i] <- findClade (lineages)
+      }
+    }
+  }
+  phylo$node.label <- node.label
+  phylo
+}
+
+palaeoPull <- function (clade, limit = 'all') {
+  # Pull all records for a clade name PBDB
+  url <- paste0 ("http://paleobiodb.org/data1.1/occs/list.json?base_name=",
+                 clade,"&limit=", limit)
+  json.obj <- safeFromJSON(url)
+  extractAgeName <- function (rec) {
+    data.frame (name = rec$tna, max.age = rec$eag, min.age = rec$lag)
+  }
+  downloaded <- ldply (.data = json.obj, .fun = extractAgeName)
+  downloaded <- downloaded[!duplicated (downloaded), ]
+  downloaded
+}
+
+getNodeAge <- function (phylo, node, phylo.age = NA) {
+  # Get age of node from root
+  term.node <- length (phylo$tip.label) + 1
+  if (is.na (phylo.age)) {
+    phylo.age <- max (diag (vcv.phylo (phylo)))
+  }
+  if (term.node == node) {
+    return (phylo.age)
+  }
+  if (node < length (phylo$tip.label) & is.ultrametric (phylo)) {
+    return (0)
+  }
+  edges <- c ()
+  while (node != term.node) {
+    edges <- c (edges, which (phylo$edge[ ,2] == node))
+    node <- phylo$edge[phylo$edge[ ,2] == node, 1]
+  }
+  return (phylo.age - sum (phylo$edge.length[edges]))
+}
+
+addTip <- function (phylo, phylo.edge, tip.name, tip.age, node.age,
+                    node.label) {
+  # Add tip to phylogeny (modified from multi2di)
+  #
+  # Args
+  #  phylo: phylogeny on which the new tip will be added
+  #  phylo.edge: edge of phylogeny where tip will be added
+  #  tip.name: name of new tip
+  #  tip.age: age of new tip (time from root)
+  #  node.age: age of newly created node
+  #
+  # Return
+  #   phylo
+  insert <- function (target.vector, source.vector, index) {
+    #http://stackoverflow.com/questions/1493969/how-to-insert-elements-into-a-vector
+    index <- index - 1
+    positions <- c (seq_along (target.vector), index + 0.5)
+    res <- c (target.vector, source.vector)
+    res[order (positions)]
+  }
+  node.1 <- phylo$edge[phylo.edge, 1]
+  node.2 <- phylo$edge[phylo.edge, 2]
+  new.tip.edge.length <- node.age - tip.age
+  if (new.tip.edge.length < 0) {
+    stop ("Node age must be greater than tip age.")
+  }
+  new.node.edge.length <- phylo$node.age[node.1] - node.age
+  if (new.node.edge.length < 0) {
+    stop ("Node age must be greater than incipient node age")
+  }
+  edges.to.replace <- c(phylo.edge, getEdges (phylo, node.2))
+  new.edge.lengths <- c (new.node.edge.length, new.tip.edge.length,
+                         phylo$edge.length[phylo.edge] - new.node.edge.length,
+                         phylo$edge.length[edges.to.replace][-1])
+  target <- node.1 + 1
+  phylo$edge[phylo$edge > length (phylo$tip.label)] <- 
+    phylo$edge[phylo$edge > length (phylo$tip.label)] + 1
+  phylo$Nnode <- phylo$Nnode + 1
+  new.tip.labels <- c (phylo$tip.label, tip.name)
+  new.tip <- length (new.tip.labels)
+  new.node <- new.tip + phylo$Nnode
+  new.edges <- matrix (nrow = length (edges.to.replace) + 2, ncol = 2)
+  new.edges[1, ] <- c (target, new.node)
+  new.edges[2, ] <- c (new.node, new.tip)
+  for (i in 1:length (edges.to.replace)) {
+    new.edge <- phylo$edge[edges.to.replace[i],]
+    new.edge[new.edge == target] <- new.node
+    new.edges[i+2, ] <- new.edge
+  }
+  phylo$edge <- rbind (phylo$edge[-edges.to.replace, ], new.edges)
+  phylo$edge.length <- c (phylo$edge.length[-edges.to.replace],
+                          new.edge.lengths)
+  phylo$tip.label <- new.tip.labels
+  if (!is.null(attr(phylo, "order"))) 
+    attr(phylo, "order") <- NULL
+  phylo$node.label <- insert (phylo$node.label, rep(node.label, 2),
+                              c (new.tip, new.node))
+  phylo$node.age <- insert (phylo$node.age, c (tip.age, node.age),
+                            c (new.tip, new.node))
+  phylo <- reorder(phylo)
+  newNb <- integer(phylo$Nnode)
+  n <- length (phylo$tip.label)
+  newNb[1] <- n + 1L
+  sndcol <- phylo$edge[, 2] > n
+  o <- 1 + rank (phylo$edge[sndcol, 2])
+  int.node.i <- (length (phylo$tip.label) + 1):
+    (length (phylo$tip.label) + phylo$Nnode)
+  int.node.label <- phylo$node.label[int.node.i]
+  int.node.age <- phylo$node.age[int.node.i]
+  int.node.label <- int.node.label[c(1, o)]
+  int.node.age <- int.node.age[c(1, o)]
+  phylo$node.label[int.node.i] <- int.node.label
+  phylo$node.age[int.node.i] <- int.node.age
+  phylo$edge[sndcol, 2] <- newNb[phylo$edge[sndcol, 2] - n] <- n + 
+    2:phylo$Nnode
+  phylo$edge[, 1] <- newNb[phylo$edge[, 1] - n]
+  phylo
+}
+
+addFossilsToPhylogeny <- function (phylo, records, ex.age = 'min.age') {
+  # Add PBDB fossil records to a phylogeny by name and age matching
+  #
+  # Args
+  #  phylo: phylogeny on which fossils are to be added
+  #  records: fossil records from PBDB (from palaeoPull)
+  #  ex.age: estimate of extinction, either min.age or max.age
+  #
+  # Return
+  #  phylo
+  phylo.env <- new.env ()
+  local (findEdge <- function (name, age) {
+    # Finding matching node in phylogeny by name, then by age
+    # Add to oldest matched named node
+    matching.nodes <- which (phylo$node.label == name)
+    matching.node.ages <- phylo$node.age[matching.nodes]
+    node.1 <- matching.nodes[matching.node.ages == max (matching.node.ages)]
+    if (length (node.1) > 1) {
+      # if more than one matching named node of same age, choose at random
+      node.1 <- sample (node.1, 1)
+    }
+    if (sum (matching.node.ages > age) > 0) {
+      node.2 <- phylo$edge[phylo$edge[ ,1] == node.1, 2]
+      if (sum (node.2 %in% matching.nodes) != 1) {
+        # if all or no decendants of node.1 match name, choose at random
+        node.2 <- sample (node.2, 1)
+      } else {
+        node.2 <- node.2[node.2 %in% matching.nodes]
+      }
+    } else {
+      while (TRUE) {
+        node.age <- phylo$node.age[node.1]
+        if (node.age > age) {
+          break
+        }
+        node.2 <- node.1
+        node.1 <- phylo$edge[phylo$edge[ ,2] == node.1, 1]
+      }
+    }
+    which (phylo$edge[, 1] == node.1 & phylo$edge[ ,2] == node.2)
+  }, env = phylo.env)
+  local (matchFossilToPhylogeny <- function (record) {
+    name <- as.character(record["name"])
+    age <- as.numeric (record[ex.age])
+    if (name %in% phylo$tip.label) {
+      return (NA)
+    }
+    genus.name <- strsplit(as.character (name), " ")[[1]][1]
+    if (genus.name %in% phylo$node.label) {
+      lineage <- genus.name
+      edge <- findEdge (genus.name, age)
+      return (data.frame (name, age, lineage, edge))
+    }
+    parent <- findParent(genus.name)
+    if (length (parent) == 0) {
+      print (paste0 ("No lineage record for [", name, "] ..."))
+      return (NA)
+    }
+    matching.clade <- parent[match (TRUE, parent %in% phylo$node.label)]
+    if (is.na (matching.clade)) {
+      return (NA)
+    }
+    lineage <- paste (parent[1:which (parent == matching.clade)], collapse = "|")
+    edge <- findEdge (matching.clade, age)
+    data.frame (name, age, lineage, edge)
+  }, env = phylo.env)
+  addFossil <- local (function (i) {
+    record <- records[i, ]
+    record <- matchFossilToPhylogeny (record)
+    #print (record)
+    if (!is.na (record[[1]])) {
+      phylo.edge <- as.integer (record['edge'])
+      tip.name <- as.character (record[['name']])
+      tip.age <- as.numeric (record['age'])
+      if (tip.age == 0) {
+        tip.age <- 0.01
+      }
+      node.age <- phylo$node.age[phylo$edge[phylo.edge, 1]]
+      node.age <- node.age - 0.01
+      node.label <- as.character (record[['lineage']])
+      phylo <<- addTip (phylo, phylo.edge, tip.name, tip.age, node.age, node.label)
+    }
+  }, env = phylo.env)
+  dups <- records$name[duplicated (records$name)]
+  for (dup in dups) {
+    max.age <- max (records[records$name %in% dup, 'max.age'])
+    min.age <- min (records[records$name %in% dup, 'min.age'])
+    record <- data.frame (name = dup, min.age, max.age)
+    records <- rbind (records[!records$name %in% dup, ], record)
+  }
+  phylo.age <- max (phylo$node.age)
+  records <- records[records[ex.age] < phylo.age, ]
+  records <- records [order (records[ex.age], decreasing = TRUE), ]
+  local (records <- records, env = phylo.env)
+  local (phylo <- phylo, env = phylo.env)
+  m_ply (.data = data.frame (i = 1:nrow (records)),
+         .fun = addFossil, .expand = FALSE,
+         .progress = create_progress_bar (name = "time"))
+  get (x = 'phylo', envir = phylo.env)
+}
+
+addNodeAges <- function (phylo) {
+  # Add node.ages to phylo object
+  phylo.age <- max (diag (vcv.phylo (phylo)))
+  node.ages <-
+    mdply (.data = data.frame (node = 1:(length (phylo$tip.label) + phylo$Nnode)),
+           .progress = create_progress_bar (name = "time"), .fun = getNodeAge, phylo,
+           phylo.age)[ ,2]
+  phylo$node.age <- node.ages
+  phylo
+}
+
 calcFairProportion <- function (phylo) {
   countDescendants <- function (node) {
     length (nodeDescendants (phylo, node))
@@ -85,41 +396,6 @@ nearestNodeDistance <- function(phylo, node, display = FALSE) {
     nodelabels("nextnode", nearest.node)
   }
   return(phylo$edge.length[nearest.node.edge])
-}
-
-nodeDescendants <- function(phylo, node, display = FALSE) {
-  # Return the descendant species from a node
-  #
-  # Args:
-  #  phylo: phylogeny (ape class)
-  #  node: the node number in phylo
-  #
-  # Return:
-  #  vector of tip labels
-  if (!is.numeric(node)) {
-    stop("node is not numeric!")
-  }
-  if (node > phylo$Nnode + length(phylo$tip.label)) {
-    stop("node is greater than the number of nodes in phylo!")
-  }
-  if (node <= length(phylo$tip.label)) {
-    term.nodes <- node
-  } else {
-    term.nodes <- vector()
-    temp.nodes <- node
-    while (length(temp.nodes) > 0) {
-      connecting.nodes <- phylo$edge[phylo$edge[,1] %in% temp.nodes, 2]
-      term.nodes <- c(term.nodes, connecting.nodes[connecting.nodes <= length(phylo$tip.label)])
-      temp.nodes <- connecting.nodes[connecting.nodes > length(phylo$tip.label)]
-    }
-  }
-  descendants <- phylo$tip.label[term.nodes]
-  if (display) {
-    tip.cols <- ifelse(phylo$tip.label %in% descendants, "black", "grey")
-    plot.phylo(phylo, tip.color = tip.cols, show.tip.label = TRUE)
-    nodelabels("node", node)
-  }
-  return (descendants)  
 }
 
 listClades <- function (phylo) {
