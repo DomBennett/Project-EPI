@@ -9,6 +9,63 @@ require (geiger)
 require (plyr)
 
 ## Functions
+getTimeslice <- function (phylo, time.slice) {
+  # identify all nodes and edges that need to be kept
+  # all edges that have 1 node on older than time.slice
+  keep.nodes <- which (phylo$node.age >= time.slice)
+  keep.edges <- which (phylo$edge[ ,1] %in% keep.nodes)
+  # remove any tip nodes that don't pass through timeslice
+  tip.edges <- which (phylo$edge[keep.edges, 2] <= length (phylo$tip.label))
+  tip.node.ages <- phylo$node.age[phylo$edge[keep.edges[tip.edges], 2]]
+  drop.tip.edges <- tip.edges[tip.node.ages > time.slice]
+  if (length (drop.tip.edges) > 0) {
+    keep.edges <- keep.edges[-drop.tip.edges]
+  }
+  # create an edge matrix
+  edge.matrix <- phylo$edge[keep.edges, ]
+  edge.lengths <- phylo$edge.length[keep.edges]
+  edge.changes <- phylo$edge.changes[keep.edges]
+  tips <- edge.matrix[!edge.matrix[ ,2] %in% edge.matrix[ ,1],2]
+  tip.labels <- phylo$node.label[tips]
+  n.node <- as.integer (length (unique (edge.matrix[ ,1])))
+  # relabel all nodes
+  new.edge.matrix <- edge.matrix
+  new.edge.matrix[edge.matrix[ ,2] %in% tips,2] <- 1:length (tips)
+  new.edge.matrix[!new.edge.matrix[ ,1] %in% new.edge.matrix[ ,2],1] <- length (tips) + 1
+  old.nodes <- unique (new.edge.matrix[new.edge.matrix[ ,1] > length (tips) + 1,1])
+  new.nodes <- (length (tips) + 2):(length (old.nodes) + (length (tips) + 1))
+  for (i in 1:length (old.nodes)) {
+    new.edge.matrix[new.edge.matrix[ ,1] == old.nodes[i],1] <- new.nodes[i]
+    new.edge.matrix[new.edge.matrix[ ,2] == old.nodes[i],2] <- new.nodes[i]
+  }
+  storage.mode(new.edge.matrix) <- "integer"
+  # create new phylo object
+  new.phylo <- list (edge = new.edge.matrix, tip.label = tip.labels,
+                     edge.length = edge.lengths, Nnode = n.node)
+  class (new.phylo) <- 'phylo'
+  new.phylo$edge.changes <- edge.changes
+  # identify corresponding nodes
+  old.nodes <- unique (c (edge.matrix[ ,1], edge.matrix[ ,2]))
+  new.nodes <- unique (c (new.edge.matrix[ ,1], new.edge.matrix[ ,2]))
+  node.labels <- phylo$node.label[old.nodes]
+  node.ages <- phylo$node.age[old.nodes]
+  new.phylo$node.label <- node.labels[order(new.nodes)]
+  new.phylo$node.age <- node.ages[order(new.nodes)]
+  # identify all tip nodes and re-lengthen
+  for (i in 1:length (new.phylo$tip.label)) {
+    diff <- time.slice - new.phylo$node.age[i]
+    edge <- which (new.phylo$edge[ ,2] == i)
+    edge.length <- new.phylo$edge.length[edge]
+    new.edge.length <- edge.length - diff
+    new.phylo$edge.length[edge] <- new.edge.length
+    edge.change <- new.phylo$edge.changes[edge]
+    new.edge.change <- edge.change * new.edge.length/edge.length
+    new.phylo$edge.changes[edge] <- new.edge.change
+    new.phylo$node.age[i] <- time.slice
+  }
+  new.phylo
+}
+
 safeFromJSON <- function (url, max.trys = 10) {
   # Wrapper for fromJSON
   trys <- 0
@@ -317,6 +374,16 @@ addNodeAges <- function (phylo) {
            .progress = create_progress_bar (name = "time"), .fun = getNodeAge, phylo,
            phylo.age)[ ,2]
   phylo$node.age <- node.ages
+  phylo
+}
+
+addEdgeLabels <- function (phylo) {
+  findLabel <- function (i) {
+    node <- phylo$edge[i,1]
+    phylo$node.label[i]
+  }
+  phylo$edge.label <- mdply (.data = data.frame (i = 1:nrow (phylo$edge)),
+                             .fun = findLabel)[ ,2]
   phylo
 }
 
@@ -669,7 +736,7 @@ plotEdgeChanges <- function (phylo, by.char = FALSE) {
 }
   
 
-calcLFIMeasures <- function (phylo) {
+calcLFIMeasures <- function (phylo, EDs) {
   # Calculate a living fossil measures based on branch changes
   #
   # Args:
@@ -680,12 +747,14 @@ calcLFIMeasures <- function (phylo) {
   if (is.null (phylo$edge.changes)) {
     stop ("Phylo class has no edge.changes.")
   }
-  EDs <- evol.distinct (phylo, type = "fair.proportion")
-  calcEachNode <- function (i) {
-    node <- phylo$edge[i,2]
+  #EDs <- calcFairProportion (phylo)
+  calcEachNode <- function (node) {
+    #node <- phylo$edge[i,2]
+    i <- which (phylo$edge[ ,2] == node)
     descendants <- nodeDescendants(phylo, node)
-    temp.edges <- extractEdges(phylo, descendants, type = 3)
+    temp.edges <- extractEdges (phylo, descendants, type = 3)
     clade <- paste(descendants, collapse = "|")
+    node.label <- phylo$node.label[node]
     n <- length (descendants)
     #n <- sum (phylo$scope[phylo$tip.label %in% descendants])
     s.edge.length <- phylo$edge.length[i]
@@ -705,21 +774,29 @@ calcLFIMeasures <- function (phylo) {
       d.edge.change <- sum (phylo$edge.changes[comp.edges])
       d.edge.length <- sum (phylo$edge.length[comp.edges])
     }
-    mean.change <- (s.edge.change + d.edge.change)/s.edge.length + d.edge.length
-    mean.ED <- mean (EDs[descendants])
-    sd.ED <- sd (EDs[descendants])
+    mean.change <- (s.edge.change + d.edge.change)/(s.edge.length + d.edge.length)
+    temp.EDs <- EDs[EDs$sp %in% descendants,2]
+    mean.ED <- mean (temp.EDs)
+    sd.ED <- sd (temp.EDs)
     sister.node <- findSisterNode (phylo, node)
-    data.frame (node, clade, sister.node, n, nnnd, s.edge.length, s.edge.change, d.edge.length,
-                d.edge.change, time.split, mean.change, mean.ED, sd.ED)
+    data.frame (node, clade, node.label, sister.node, n, nnnd, s.edge.length, s.edge.change,
+                d.edge.length, d.edge.change, time.split, mean.change, mean.ED, sd.ED)
   }
   addSisterContrasts <- function (i) {
     sister.node <- res[i,'sister.node']
     sister.i <- which (res$node == sister.node)
-    contrast.change <- res$change[i]/res$change[sister.i]
+    contrast.change <- res$mean.change[i]/res$mean.change[sister.i]
     contrast.n <- res$n[i]/res$n[sister.i]
+    contrast.ED <- res$mean.ED[i]/res$mean.ED[sister.i]
+    data.frame (contrast.change, contrast.n, contrast.ED)
   }
-  res <- mdply (.data = data.frame (i = 1:nrow (phylo$edge)), .fun = calcEachNode)
-  res[ ,-1]
+  # all nodes apart from root
+  nodes <- c (1:length (phylo$tip.label),
+              (length (phylo$tip.label) + 2): (length (phylo$tip.label) + phylo$Nnode))
+  res <- mdply (.data = data.frame (node = nodes), .fun = calcEachNode,
+                .progress = create_progress_bar (name = 'time'))
+  contrast.res <- mdply (.data = data.frame (i = 1:nrow (res)), .fun = addSisterContrasts)
+  cbind (res, contrast.res[ ,-1])
 }
 
 lfiChecker <- function (time, change, performance, cut) {
