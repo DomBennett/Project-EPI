@@ -32,9 +32,15 @@ if (!is.binary.tree (phylo)) {
 phylo$tip.label <- sub ("_", " ", phylo$tip.label)
 
 ## Process
-records <- palaeoPull("Mammalia", limit = 1000)
+cat ("Retrieving fossil records ... \n")
+records <- palaeoPull("Mammalia", limit = 'all')
+cat ("Cleaning names ... \n")
 records$name <- cleanNames (records$name)
+cat ('Labelling phylogeny ... \n')
 phylo <- labelNodes (phylo)
+cat ('Adding node ages ...\n')
 phylo <- addNodeAges (phylo)
+cat ('Adding fossils to phylogeny ...\n')
 new.phylo <- addFossilsToPhylogeny (phylo, records)
+cat ('Outputting ...\n')
 write.tree (new.phylo, file.path (output.dir, "mammalia_w_fossils.tre"))
