@@ -71,7 +71,7 @@ pca.res <- prcomp (living.fossils[ ,names (living.fossils) %in% c ("time", "perf
 pca.x <- as.data.frame(pca.res$x)
 pca.rot <- as.data.frame (pca.res$rotation)
 prop.var <- round (sapply (pca.res$sdev^2,
-                            function (x) Reduce('+', x)/sum (pca.res$sdev^2)), 3)
+                           function (x) Reduce('+', x)/sum (pca.res$sdev^2)), 3)
 comparisons <- list (c ("PC1", "PC2"), c ("PC2", "PC3"), c ("PC1", "PC3"))
 for (comp in comparisons) {
   p <- ggplot (pca.x, aes_string (x = comp[1], y = comp[2], size = 2)) +
@@ -86,4 +86,3 @@ for (comp in comparisons) {
         rownames (pca.rot[comp[1]]), adj = 1)
   prop.var <- prop.var[-c(1,2)]
 }
-
