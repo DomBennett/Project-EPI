@@ -6,35 +6,37 @@
 ## Libraries
 cat ("Loading libraries ...\n")
 source (file.path ("functions", "LFITools.R"))
+source (file.path ("functions", "taxaResolve.R"))
 source (file.path ("functions", "EcoDataTools.R"))
 
 ## Directories
-input.dir <- "0_data"
-output.dir <- "1_measures"
-if (!file.exists (output.dir)) {
-  dir.create (output.dir)
-}
+dir <- "1_measures"
 
 ## Import data (not automated...)
 cat ("Importing data ...\n")
-load (file.path(input.dir, "mammal.RData")) # or ladybird
-phylo <- data[["phylo"]]
-chars <- data[["chars"]]
-rm (data)
-# start with mangeable size
-#phylo <- drop.tip (phylo, sample (phylo$tip.label, length (phylo$tip.label) - 1000))
-#chars <- chars[phylo$tip.label,]
+load (file.path(dir, "PhyloMeasures.RData"))
 
-## Calculate LFI.data
-cat ("Estimating node states ...\n")
-reconstruction.obj <- parsimonyReconstruction (chars, phylo)
-cat ("Calculating edge changes ...\n")
-phylo <- calcEdgeChanges (phylo, reconstruction.obj)
-#plotEdgeChanges (phylo, by.char = TRUE)
+## Calculate LFI.data at different time points
 cat ("Calculating LFI measures ...\n")
-measures <- calcLFIMeasures (phylo)
+phylo$tip.label <- sub ("_", " ", phylo$tip.label)
+phylo <- drop.tip (phylo, phylo$tip.label[!phylo$tip.label %in% sample (phylo$tip.label, 1000)])
+phylo$edge.changes <- rep (1, nrow (phylo$edge))
+phylo <- addNodeAges (phylo)
+phylo.age <- max (phylo$node.age)
+#phylo <- labelNodes (phylo)
+phylo$node.label <- paste0 ('id', 1:(length (phylo$tip.label) + phylo$Nnode))
+n.time.points <- 2
+increment <- phylo.age/(n.time.points)
+# getTimeslice does not work with 0.0
+time.point <- seq (from = 0.001, to = (phylo.age - increment), by = increment - 0.001)
+res <- list ()
+for (i in 1:n.time.points) {
+  past.phylo <- getTimeslice (phylo, time.point[i])
+  EDs <- calcFairProportion (past.phylo)
+  measures <- calcLFIMeasures (past.phylo, EDs)
+  res <- c (res, list (measures))
+}
 
 ## Output LFI.data
 cat ("Outputting ...\n")
-write.csv (x = measures, file = file.path (output.dir, "measures.csv"), row.names = FALSE)
-save (phylo, file = file.path (output.dir, "PhyloMeasures.RData"))
+save (res, file = file.path (dir, "measures.RData"))
