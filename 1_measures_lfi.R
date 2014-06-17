@@ -19,6 +19,7 @@ load (file.path(dir, "PhyloMeasures.RData"))
 ## Calculate LFI.data at different time points
 cat ("Calculating LFI measures ...\n")
 EDs <- calcFairProportion (phylo)
+phylo <- labelNodes (phylo)
 measures <- calcLFIMeasures (phylo, EDs)
 
 ## Output LFI.data

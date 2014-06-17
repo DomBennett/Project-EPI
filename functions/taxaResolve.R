@@ -16,7 +16,7 @@ taxaResolve <- function (names, batch = 100){
   batchResolve <- function (batch.names) {
     #create query from names
     url <- "http://resolver.globalnames.org/name_resolvers.json?"
-    data_source_ids <- "&data_source_ids=4" # 4 is for NCBI, only working with NCBI at the moment but you can change this.
+    data_source_ids <- "&data_source_ids=4"
     names2 <- paste ("names=", paste (str_replace_all(batch.names, " ", "+"), collapse = "|",
                                     sep = ""), sep = "")
     query <- paste (compact (list (url, names2, data_source_ids)), collapse = "")

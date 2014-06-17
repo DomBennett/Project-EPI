@@ -484,7 +484,7 @@ listClades <- function (phylo) {
   nodes <- nodes[order (sizes, decreasing = TRUE)]
   list (clades, nodes)
 }
-  
+
 matchClades <- function (q.clade.node, s.clade.node) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.

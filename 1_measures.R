@@ -14,13 +14,13 @@ dir <- "1_measures"
 
 ## Import data (not automated...)
 cat ("Importing data ...\n")
-load (file.path(dir, "PhyloMeasures.RData"))
+phylo <- read.tree (file.path("0_data/raw/mammalia_w_fossils.tre"))
 
-## Calculate LFI.data at different time points
-cat ("Calculating LFI measures ...\n")
+## Calculate EPI.data at different time points
+cat ("Calculating EPI measures ...\n")
 phylo$tip.label <- sub ("_", " ", phylo$tip.label)
-phylo <- drop.tip (phylo, phylo$tip.label[!phylo$tip.label %in% sample (phylo$tip.label, 1000)])
-phylo$edge.changes <- rep (1, nrow (phylo$edge))
+#phylo <- drop.tip (phylo, phylo$tip.label[!phylo$tip.label %in% sample (phylo$tip.label, 1000)])
+phylo$edge.changes <- phylo$edge.length
 phylo <- addNodeAges (phylo)
 phylo.age <- max (phylo$node.age)
 #phylo <- labelNodes (phylo)
