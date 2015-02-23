@@ -72,5 +72,7 @@ chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
 }
+# missing data
+#sum(is.na (chars))*100/(nrow (chars) * ncol (chars))
 data <- list (phylo = phylo, chars = chars)
 save (data, file = file.path (output.dir, "mammal.RData"))

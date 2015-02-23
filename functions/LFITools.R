@@ -7,6 +7,7 @@
 require (ape)
 require (geiger)
 require (plyr)
+library (graphics)
 
 ## Functions
 getTimeslice <- function (phylo, time.slice) {
@@ -675,7 +676,7 @@ calcEdgeChanges <- function (f.phylo, reconstruction.obj, weight.by.edge = TRUE)
       start <- r.node.states[edge[1], ]
       end <- r.node.states[edge[2], ]
       if (is.numeric (start)) { # for ordered states
-        change <- abs (sum (start) - sum (end))/2 
+        change <- abs (sum (start) - sum (end))/2
       } else { # for unordered states
         change <- sum (start != end)/2
       }
@@ -799,21 +800,24 @@ calcLFIMeasures <- function (phylo, EDs) {
   cbind (res, contrast.res[ ,-1])
 }
 
-lfiChecker <- function (time, change, performance, cut) {
+EPIChecker <- function (time, change, success, cut) {
   hist(time)
   hist(change)
-  hist(performance)
-  lfi <- time - (change + performance)/2
-  plot(time ~ lfi)
-  abline (lm (time ~ lfi), col = "red")
-  plot(change ~ lfi)
-  abline (lm (change ~ lfi), col = "red")
-  plot(performance ~ lfi)
-  abline (lm (performance ~ lfi), col = "red")
-  hist (lfi)
-  cutoff <- quantile (lfi, probs = cut)
-  abline (v = cutoff, col = "red")
-  lfi
+  hist(success)
+  epi <- ((change + success)/2) - time
+  plot(time ~ epi)
+  abline (lm (time ~ epi), col = "red")
+  plot(change ~ epi)
+  abline (lm (change ~ epi), col = "red")
+  plot(success ~ epi)
+  abline (lm (success ~ epi), col = "red")
+  hist (epi, xlab = 'EPI', ylab = NULL, main = NULL,
+        col = 'cornflowerblue')
+  cutoff <- quantile (epi, probs = cut)
+  abline (v = cutoff, col = "red", lwd = 2)
+  mtext (text = '<-- Living fossils',
+         line = -1.5, adj = 0.1, cex = 0.8)
+  epi
 }
 
 plotLFI <- function (phylo, lfi.res) {
