@@ -3,13 +3,13 @@
 This pipeline generates EPI values for any group provided a tree and character states are
 provided.
 
-*Scripts*
+**Scripts**
 
 * `run.R`: run all stages with given parameters
 * `parameters.R`: set parameters for pipeline (open script, set parameters, run script)
 * `setup.R`: ensure data folder is in order, ensure dependencies are installed
 
-*Stages*
+**Stages**
 
 0. `0_data.R`: wrangle downloaded data from 0_data/ for subsequent stages
 1. `1_change.R`: estimate change
@@ -18,10 +18,10 @@ provided.
 4. `4_epi.R`: calculate EPI
 5. `5_correlates.R`: determine correlates
 
-*Reference*
+**Reference**
 
-**Not yet published**
+*Not yet published*
 
-*Author*
+**Author(s)**
 
 Dom Bennett
