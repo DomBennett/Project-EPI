@@ -73,7 +73,7 @@ write.csv (x = measures, file = file.path (output.dir, "livingfossils.csv"),
 
 ## PCA
 pca.res <- prcomp (measures[ ,names (measures) %in% c ("time", "performance",
-                                                                   "change")],
+                                                       "change")],
                    scale. = TRUE, center = TRUE)
 pca.x <- as.data.frame(pca.res$x)
 pca.rot <- as.data.frame (pca.res$rotation)
