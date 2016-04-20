@@ -46,7 +46,7 @@ metrics$change <- change
 
 # OUTPUT
 cat("Outputting ...\n")
-save(metrics, file = file.path(output.dir, paste0(stdy_sbjct, ".RData")))
+save(metrics, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
 
 # END
 cat(paste0('\nStage `epi` finished at [', Sys.time(), ']\n'))

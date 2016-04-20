@@ -22,13 +22,13 @@ if(!file.exists(output.dir)) {
 
 # INPUT
 cat("Importing data ...\n")
-load(file.path(input.dir, rdata_file))
+load(file.path(input.dir, paste0(stdy_grp, '.RData')))
 phylo <- data[["phylo"]]
 chars <- data[["chars"]]
 rm(data)
-# test with mangeable size
-phylo <- drop.tip(phylo, sample(phylo$tip.label, length(phylo$tip.label) - 1000))
-chars <- chars[phylo$tip.label, sample(1:length(chars), size=100)]
+# # test with mangeable size
+# phylo <- drop.tip(phylo, sample(phylo$tip.label, length(phylo$tip.label) - 1000))
+# chars <- chars[phylo$tip.label, sample(1:length(chars), size=100)]
 
 
 # PROCESS
