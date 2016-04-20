@@ -9,14 +9,17 @@ require(ggplot2)
 require(maps)
 require(mapdata)
 
-data <- read.delim (file = file.path ('0_data', 'raw', 'panTHERIA.txt'), na.strings = -999)
-metrics <- read.csv (file = file.path (input.dir, "livingfossils_alldata_contrasts.csv"))
+data <- read.delim (file = file.path ('0_data', 'raw', 'panTHERIA.txt'), na.strings = -999,
+                    stringsAsFactors=FALSE)
+metrics <- read.csv (file = file.path (input.dir, "livingfossils_alldata_contrasts.csv"),
+                     stringsAsFactors=FALSE)
 metrics$node.label <- sub ('_', ' ', metrics$node.label)
 data$lfi <- metrics$lfi[match (data$MSW93_Binomial, metrics$node.label)]
 data <- data[!is.na (data$lfi),]
 data <- data[!is.na (data$X26.4_GR_MRLat_dd),]
 data <- data[!is.na (data$X26.7_GR_MRLong_dd),]
 data <- data[order (data$lfi), ]
+data$tree_binomials <- gsub(" ", "_", data$MSW93_Binomial)
 lfi <- data$lfi
 lat <- data$X26.4_GR_MRLat_dd
 long <- data$X26.7_GR_MRLong_dd
@@ -25,6 +28,25 @@ plot(log(data$X22.1_HomeRange_km2), data$lfi)
 abline(lm (lfi~range))
 
 names(data)
+
+
+# load tree for nlme
+library(ape)
+library(nlme)
+tree <- read.tree('0_data/raw/bininda.txt')
+# TODO: do this for all trait values
+model.data <- data[!is.na(data$X22.1_HomeRange_km2), ]
+rownames(model.data) <- model.data$tree_binomials
+to.drop <- tree$tip.label[!tree$tip.label %in% model.data$tree_binomials]
+model.tree <- drop.tip(tree, to.drop)
+hist(model.data$X22.1_HomeRange_km2)
+model.data$home.range.logged <- log(model.data$X22.1_HomeRange_km2)
+hist(model.data$home.range.logged)
+model <- gls(home.range.logged ~ lfi, data=model.data, method="ML",
+             correlation=corPagel(value=1, phy=model.tree, fixed=TRUE))
+summary(model)
+plot(model)
+
 
 for(i in 1:ncol(data)) {
   if(is(data[ ,i], 'vector')) {
