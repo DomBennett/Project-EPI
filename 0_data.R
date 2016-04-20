@@ -66,14 +66,15 @@ oleary <- readNexusData (file.path (input.dir, file))
 chars <- merge (oleary, pantheria, by = 0, all = TRUE)
 rownames (chars) <- c (rownames (oleary) [!rownames (oleary) %in% rownames (pantheria)], rownames (pantheria))
 phylo <- read.tree (file.path (input.dir, "bininda.txt"))
-# TODO: look up node labels with GNR
-#node.labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
-node.labels <- MoreTreeTools::getNodeLabels(phylo, all=TRUE, datasource=1)
-phylo$node.label <- node.labels
-chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
 }
+#node.labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
+node.labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, datasource=1)
+node.labels <- paste0(node.labels, '_', 1:phylo$Nnode)  # prevent duplicates
+all.node.labels <- c(gsub("_", " ", phylo$tip.label), node.labels)
+phylo$node.labels <- all.node.labels
+chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 # missing data
 #sum(is.na (chars))*100/(nrow (chars) * ncol (chars))
 data <- list (phylo = phylo, chars = chars)
