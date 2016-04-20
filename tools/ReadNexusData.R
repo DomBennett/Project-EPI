@@ -1,3 +1,5 @@
+# House-code for reading non-standard nexus data
+
 readNexusData <- function(file) {
   # internal functions
   getBlock <- function (block.header, data) {

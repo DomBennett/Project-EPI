@@ -1,13 +1,11 @@
-## No copyright, no warranty
-## Dominic John Bennett
-## 04/03/2014
+# Run this script to wrangle 0_data/raw files for pipleine
 
-## Libraries
-require (ape)
-require (plyr)
-source ("functions/ReadNexusData.R")
+# LIBS
+library(ape)
+library(plyr)
+source (file.path('tools', "ReadNexusData.R"))
 
-## Functions
+# FUNCTIONS
 calcScope <- function (r.phylo.names, f.phylo) {
   calcEachScope <- function (i) {
     r.phylo.dists <- abs (vcv (r.phylo, corr = TRUE) - 1)
@@ -36,11 +34,11 @@ matchPhyChar <- function (phylo, chars) {
 }
 
 
-## Directories
+# DIRS
 output.dir <- "0_data"
 input.dir <- file.path(output.dir, "raw")
 
-## Ladybird
+# DATA -- Ladybird
 data <- read.nexus.data (file.path (input.dir, "ladybird_matrix.nex"))
 data <- lapply (data, function (x) x[2254:2365])
 chars <- matrix (unlist (data), nrow = length (data), byrow = TRUE)
@@ -51,7 +49,7 @@ phylo <- read.nexus (file.path (input.dir, "ladybird_tree.nex"))[[1]]
 data <- matchPhyChar (phylo, chars)
 save (data, file = file.path (output.dir, "ladybird.RData"))
 
-## Mammal (http://esapubs.org/archive/ecol/e090/184/)
+# DATA -- Mammal (http://esapubs.org/archive/ecol/e090/184/)
 data <- read.delim (file.path (input.dir, "panTHERIA.txt"), na.strings = -999,
                     stringsAsFactors = FALSE)
 pantheria <- data[ ,- c (1:5,36:55)]
@@ -68,6 +66,10 @@ oleary <- readNexusData (file.path (input.dir, file))
 chars <- merge (oleary, pantheria, by = 0, all = TRUE)
 rownames (chars) <- c (rownames (oleary) [!rownames (oleary) %in% rownames (pantheria)], rownames (pantheria))
 phylo <- read.tree (file.path (input.dir, "bininda.txt"))
+# TODO: look up node labels with GNR
+#node.labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
+node.labels <- MoreTreeTools::getNodeLabels(phylo, all=TRUE, datasource=1)
+phylo$node.label <- node.labels
 chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
