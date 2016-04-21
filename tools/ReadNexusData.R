@@ -73,7 +73,7 @@ readNexusData <- function(file) {
       tax.label.found <- FALSE
       for (j in 1:length (matrix)) {
         # loop through each element of the matrix, test if name is present
-        if (grepl (tax.labels[i], matrix[j])) {
+        if (grepl (paste0(tax.labels[i], '\\s+'), matrix[j])) {
           tax.label.found <- TRUE
           # if taxlabel is in matrix, add its elements to the res
           characters <- sub(tax.labels[i], "", matrix[j])
