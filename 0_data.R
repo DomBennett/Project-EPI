@@ -86,16 +86,16 @@ livezy <- readNexusData(file.path (input.dir, file))
 phylo <- read.tree(file.path(input.dir, 'jetz.tre'))
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
-livezy_mod <- matrix(data=rep(NA, ncol(livezy)), nrow=1, ncol=ncol(livezy))
+# NAs for missing taxa
+livezy_mod <- matrix(data=NA, nrow=length(phylo$tip.label), ncol=ncol(livezy))
+rownames(livezy_mod) <- phylo$tip.label
 for(i in 1:nrow(livezy)) {
   mtchs <- which(grepl(rownames(livezy)[i], phylo$tip.label))
   if(length(mtchs) > 1) {
     for(j in mtchs) {
-      livezy_mod <- rbind(livezy_mod, livezy[i, ])
-      rownames(livezy_mod)[nrow(livezy_mod)] <- phylo$tip.label[j]
+      livezy_mod[phylo$tip.label[j], ] <- livezy[i, ]
     }
   }
 }
-chars <- livezy_mod[-1, ]
-data <- list (phylo = phylo, chars = chars)
+data <- list (phylo = phylo, chars = livezy_mod)
 save (data, file = file.path (output.dir, "bird.RData"))
