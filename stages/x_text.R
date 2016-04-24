@@ -5,7 +5,7 @@
 cat(paste0('\nStage `text` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
-cutoff <- -0.1  # highest EPI for a living fossil
+cutoff <- -0.75  # highest EPI for a living fossil
 
 # LIBS
 source(file.path('tools', 'text_tools.R'))
@@ -26,7 +26,7 @@ source('token.R')
 # LOAD EPI DATA
 metrics <- read.csv(file.path('other', 'old', 'livingfossils.csv'),
                  stringsAsFactors=FALSE)
-metrics$epi <- ((metrics[['change']] + metrics[['n']])/2) - 
+metrics$epi <- ((metrics[['change']] + metrics[['performance']])/2) - 
   metrics[['time']]
 # limit to species
 metrics <- metrics[metrics[['n']] == 1, ]
@@ -35,7 +35,6 @@ metrics[['clade']] <- gsub("_", " ", metrics[['clade']])
 
 # PARITION
 lfs <- metrics[metrics[['epi']] < cutoff, ]
-lfs$clade
 
 # SEARCH IUCN
 lfs_nrrtvs <- list()
