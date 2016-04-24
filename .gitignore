@@ -21,3 +21,4 @@ raw
 *.xlsx
 *.tre
 *.pdf
+*token*
