@@ -1,3 +1,8 @@
 # SET PARAMETERS
+parallel <- TRUE
+if(parallel) {
+  library(doMC)
+  ncps <- detectCores()
+  registerDoMC(cores=ncps)
+}
 stdy_grp <- 'mammal'
-rdata_file <- 'mammal.RData'  # name of the study group data file generated with 0_data

@@ -60,7 +60,8 @@ matchClades <- function(q.clade.node, s.clade.node) {
   res
 }
 
-calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE) {
+calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
+                       parallel=FALSE) {
   # Count the number of changes that have occured along each branch in phylogeny given
   #  a reconstruction object using patristic distance.
   #
@@ -128,10 +129,12 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE) {
   f.clades <- f.clade.node[[1]]
   f.nodes <- f.clade.node[[2]]
   res <- ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
-                .progress = create_progress_bar(name = "time"))
+               .progress = create_progress_bar(name = "time"),
+               .parallel=parallel)
   # Calculate mean change for each edge across all chars
   edge.changes <- ddply(.data = res, .variables = .(f.node), .fun = summarize,
-                         mean.change = mean(change), n = length(change))
+                        mean.change = mean(change), n = length(change),
+                        .parallel=parallel)
   mean.changes <- edge.changes$mean.change[match(phylo$edge[ ,2], edge.changes$f.node)]
   f.phylo$edge.changes <- mean.changes
   f.phylo
