@@ -5,7 +5,7 @@
 cat(paste0('\nStage `text` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
-cutoff <- -0.75  # highest EPI for a living fossil
+cutoff <- -1  # highest EPI for a living fossil
 source('parameters.R')
 
 # LIBS
@@ -80,7 +80,7 @@ for(itrtn in 1:itrtns) {
   rnds <- sample(1:nrow(metrics), size=nrow(lfs))
   nulls <- metrics[rnds, ]
   for(i in 1:nrow(nulls)) {
-    nm <- nulls[i, 'clade']
+    nm <- nulls[i, 'node.label']
     nulls_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
   }
   nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['node.label']]])
