@@ -83,6 +83,8 @@ save (data, file = file.path (output.dir, "mammal.RData"))
 # DATA -- Birds
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path (input.dir, file))
+# take random subset for now
+livezy <- livezy[ ,sample(1:ncol(livezy), size=500)]
 phylo <- read.tree(file.path(input.dir, 'jetz.tre'))
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
