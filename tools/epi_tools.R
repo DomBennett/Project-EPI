@@ -91,7 +91,8 @@ calcMetrics <- function (phylo) {
     sd.ed <- sd (temp.eds)
     sister.node <- MoreTreeTools::getSister(phylo, node=node)
     data.frame (node, node.label, sister.node, n, s.edge.length, s.edge.change,
-                d.edge.length, d.edge.change, time.split, mean.change, mean.ed, sd.ed)
+                d.edge.length, d.edge.change, time.split, mean.change, mean.ed, sd.ed,
+                stringsAsFactors=FALSE)
   }
   addSisterContrasts <- function (i) {
     sister.node <- res[i,'sister.node']
@@ -99,14 +100,15 @@ calcMetrics <- function (phylo) {
     contrast.change <- res$mean.change[i]/res$mean.change[sister.i]
     contrast.n <- res$n[i]/res$n[sister.i]
     contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
-    data.frame (contrast.change, contrast.n, contrast.ed)
+    data.frame (contrast.change, contrast.n, contrast.ed, stringsAsFactors=FALSE)
   }
   # all nodes apart from root
   nodes <- c (1:length (phylo$tip.label),
               (length (phylo$tip.label) + 2): (length (phylo$tip.label) + phylo$Nnode))
-  res <- mdply (.data = data.frame (node = nodes), .fun = calcEachNode,
-                .progress = create_progress_bar (name = 'time'))
-  contrast.res <- mdply (.data = data.frame (i = 1:nrow (res)), .fun = addSisterContrasts)
+  res <- mdply (.data = data.frame (node = nodes, stringsAsFactors=FALSE),
+                .fun = calcEachNode, .progress = create_progress_bar (name = 'time'))
+  contrast.res <- mdply (.data = data.frame (i = 1:nrow (res), stringsAsFactors=FALSE),
+                         .fun = addSisterContrasts)
   cbind (res, contrast.res[ ,-1])
 }
 
