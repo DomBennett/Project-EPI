@@ -6,6 +6,7 @@ cat(paste0('\nStage `text` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 cutoff <- -0.75  # highest EPI for a living fossil
+source('parameters.R')
 
 # LIBS
 source(file.path('tools', 'text_tools.R'))
@@ -24,14 +25,13 @@ if (!file.exists(cache_dir)) {
 source('token.R')
 
 # LOAD EPI DATA
-metrics <- read.csv(file.path('other', 'old', 'livingfossils.csv'),
-                 stringsAsFactors=FALSE)
-metrics$epi <- ((metrics[['change']] + metrics[['performance']])/2) - 
-  metrics[['time']]
+load(file=file.path('2_epi', paste0(stdy_grp, '.RData')))
+# where are the NAs coming from?
+metrics <- metrics[!is.na(metrics[['epi']]), ]
 # limit to species
 metrics <- metrics[metrics[['n']] == 1, ]
 # remove _
-metrics[['clade']] <- gsub("_", " ", metrics[['clade']])
+metrics[['node.label']] <- gsub("_", " ", metrics[['node.label']])
 
 # PARITION
 lfs <- metrics[metrics[['epi']] < cutoff, ]
@@ -39,7 +39,7 @@ lfs <- metrics[metrics[['epi']] < cutoff, ]
 # SEARCH IUCN
 lfs_nrrtvs <- list()
 for(i in 1:nrow(lfs)) {
-  nm <- lfs[i, 'clade']
+  nm <- lfs[i, 'node.label']
   cat('Searching [', nm, '] ....\n')
   lfs_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
 }
@@ -49,7 +49,7 @@ lfs_hes <- getHbttEclgy(lfs_nrrtvs)
 obs <- calcStrDst(lfs_hes, mthd='cosine')
 
 # ITERATE
-itrtns <- 99
+itrtns <- 999
 null_dsts <- obs
 nulls_nrrtvs <- list()
 for(itrtn in 1:itrtns) {
@@ -57,10 +57,10 @@ for(itrtn in 1:itrtns) {
   rnds <- sample(1:nrow(metrics), size=nrow(lfs))
   nulls <- metrics[rnds, ]
   for(i in 1:nrow(nulls)) {
-    nm <- nulls[i, 'clade']
+    nm <- nulls[i, 'node.label']
     nulls_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
   }
-  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['clade']]])
+  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['node.label']]])
   res <- calcStrDst(nulls_hes, mthd='cosine')
   null_dsts <- rbind(null_dsts, res)
 }
@@ -83,7 +83,7 @@ for(itrtn in 1:itrtns) {
     nm <- nulls[i, 'clade']
     nulls_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
   }
-  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['clade']]])
+  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['node.label']]])
   res <- getWrdFrq(nulls_hes, min_freq=2)
   null_dsts <- c(null_dsts, list(res))
 }
