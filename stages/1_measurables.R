@@ -30,8 +30,9 @@ rm(data)
 # phylo <- drop.tip(phylo, sample(phylo$tip.label, length(phylo$tip.label) - 1000))
 # chars <- chars[phylo$tip.label, sample(1:length(chars), size=100)]
 
-
 # PROCESS
+cat("Reducing character matrix ...\n")
+chars <- reduceChrctrMtrx(chars, pcut=0.95)
 cat("Estimating ancestral node states ...\n")
 reconstruction.obj <- parsimonyReconstruction(chars, phylo)
 cat("Calculating edge changes ...\n")

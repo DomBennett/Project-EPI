@@ -1,5 +1,47 @@
 # In-house functions for running pipeline
 
+reduceChrctrMtrx <- function(chars, pcut=0.95) {
+  # Reduce a character matrix to independent componenets using PCA
+  # Requires a character matrix, returns characters binned using Sturges' method.
+  # Can only perform PCA on a full dataset, removes species and characters not
+  # representing the maximum.
+  # 
+  # Args:
+  #  chars: matrix of characters with species names as rows
+  #  pcut: the proportion of variance at which to cut
+  #
+  # Returns:
+  #  character matrix
+  tmp_chars <- matrix(NA, nrow=nrow(chars),
+                      ncol=ncol(chars))
+  for(i in 1:ncol(chars)) {
+    # convert non-numeric to numbers
+    if(any(tolower(chars[ ,i]) %in% letters)) {
+      tmp <- tolower(chars[ ,i])
+      chars[ ,i] <- match(tmp, letters)
+    }
+    tmp_chars[,i] <- as.numeric(chars[,i])
+  }
+  rownames(tmp_chars) <- rownames(chars)
+  csums <- colSums(!is.na(tmp_chars))
+  tmp_chars <- tmp_chars[, csums == max(csums)]
+  tmp_chars <- na.omit(tmp_chars)
+  res <- prcomp(tmp_chars)
+  prop.var <- round(sapply(res$sdev^2,
+                           function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
+  pull <- cumsum(prop.var) < pcut
+  crds <- res$x[pull,]
+  new_chars <- matrix(NA, nrow=nrow(chars),
+                      ncol=ncol(crds))
+  rownames(new_chars) <- rownames(chars)
+  pull <- match(rownames(crds), rownames(new_chars))
+  for(i in 1:ncol(crds)) {
+    n <- nclass.Sturges(crds[ ,i])
+    new_chars[pull, i] <- as.numeric(cut(crds[ ,i], n))
+  }
+  new_chars
+}
+
 calcSuccess <- function(phylo) {
   nodes <- 1:(length(phylo$tip.label) + phylo$Nnode)
   res <- mlply(.data = data.frame(node = nodes),
