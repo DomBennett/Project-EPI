@@ -84,8 +84,11 @@ save (data, file = file.path (output.dir, "mammal.RData"))
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path (input.dir, file))
 # take random subset for now
-livezy <- livezy[ ,sample(1:ncol(livezy), size=500)]
 phylo <- read.tree(file.path(input.dir, 'jetz.tre'))
+node.labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, datasource=1)
+node.labels <- paste0(node.labels, '_', 1:phylo$Nnode)  # prevent duplicates
+all.node.labels <- c(gsub("_", " ", phylo$tip.label), node.labels)
+phylo$node.labels <- all.node.labels
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
 # NAs for missing taxa
