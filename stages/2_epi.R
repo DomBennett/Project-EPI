@@ -33,16 +33,18 @@ time <- log (metrics$contrast.ed)
 time <- time / max (time, na.rm=TRUE)
 success <- log (metrics$contrast.n)
 success <- success / max (success, na.rm=TRUE)
-change <- log (metrics$contrast.change)  # +1?
+#change <- log (metrics$contrast.change)  # +1?
+change <- metrics$contrast.change
 change <- change/max (change, na.rm=TRUE)
-metrics$epi <- ((change + success)/2) - time
-pdf(file.path('figures', paste0(stdy_grp, '_epicheck.pdf')))
-EPIChecker(time, change, success, 0.05)
-dev.off()
 metrics$success <- success
 metrics$time <- time
 metrics$change <- change
-
+metrics$epi <- ((change + success)/2) - time
+metrics$epi_nc <- success - time
+pdf(file.path('figures', paste0(stdy_grp, '_epicheck.pdf')))
+EPIChecker(metrics, 0.05)
+dev.off()
+#metrics$node.label[order(metrics$epi)[1:10]]
 
 # OUTPUT
 cat("Outputting ...\n")

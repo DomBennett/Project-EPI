@@ -76,6 +76,10 @@ calcMetrics <- function (phylo) {
       d.edge.change <- 0
       time.split <- phylo$edge.length[edge]
     } else {
+      # make it 0 if NA
+      if(is.na(s.edge.change)) {
+        s.edge.change <- 0
+      }
       lf.clade <- extract.clade(phylo, node)
       rtt <- mean(diag(vcv.phylo(lf.clade)))
       time.split <- phylo$edge.length[edge] + rtt
@@ -97,7 +101,10 @@ calcMetrics <- function (phylo) {
   addSisterContrasts <- function (i) {
     sister.node <- res[i,'sister.node']
     sister.i <- which (res$node == sister.node)
-    contrast.change <- res$mean.change[i]/res$mean.change[sister.i]
+    # add 1 and remove 1 to avoid Inf
+    contrast.change <- (res$mean.change[i] + 1)/
+      (res$mean.change[sister.i] + 1)
+    contrast.change <- contrast.change - 1
     contrast.n <- res$n[i]/res$n[sister.i]
     contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
     data.frame (contrast.change, contrast.n, contrast.ed, stringsAsFactors=FALSE)
@@ -112,20 +119,26 @@ calcMetrics <- function (phylo) {
   cbind (res, contrast.res[ ,-1])
 }
 
-EPIChecker <- function (time, change, success, cut) {
-  hist(time)
-  hist(change)
-  hist(success)
-  epi <- ((change + success)/2) - time
-  plot(time ~ epi)
-  abline (lm (time ~ epi), col = "red")
-  plot(change ~ epi)
-  abline (lm (change ~ epi), col = "red")
-  plot(success ~ epi)
-  abline (lm (success ~ epi), col = "red")
-  hist (epi, xlab = 'EPI', ylab = NULL, main = NULL,
+EPIChecker <- function (metrics, cut) {
+  hist(metrics$time)
+  hist(metrics$change)
+  hist(metrics$success)
+  plot(time ~ epi, data=metrics)
+  abline (lm (time ~ epi, data=metrics), col = "red")
+  plot(change ~ epi, data=metrics)
+  abline (lm (change ~ epi, data=metrics), col = "red")
+  plot(success ~ epi, data=metrics)
+  abline (lm (success ~ epi, data=metrics), col = "red")
+  plot(epi_nc ~ epi, data=metrics)
+  abline (lm (epi_nc ~ epi, data=metrics), col = "red")
+  hist (metrics$epi, xlab = 'EPI', ylab = NULL, main = NULL,
         col = 'cornflowerblue')
-  cutoff <- quantile (epi, probs = cut, na.rm=TRUE)
+  cutoff <- quantile (metrics$epi, probs = cut, na.rm=TRUE)
   abline (v = cutoff, col = "red", lwd = 2)
-  text (labels = '<-- Living fossils', x=cutoff, y=length(change)/100, cex = 0.8)
+  text (labels = '<-- Living fossils', x=cutoff, y=nrow(metrics)/100, cex = 0.8)
+  hist (metrics$epi_nc, xlab = 'EPI (No change)', ylab = NULL, main = NULL,
+        col = 'cornflowerblue')
+  cutoff <- quantile (metrics$epi_nc, probs = cut, na.rm=TRUE)
+  abline (v = cutoff, col = "red", lwd = 2)
+  text (labels = '<-- Living fossils', x=cutoff, y=nrow(metrics)/100, cex = 0.8)
 }

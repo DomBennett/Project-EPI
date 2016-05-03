@@ -26,15 +26,13 @@ source('token.R')
 
 # LOAD EPI DATA
 load(file=file.path('2_epi', paste0(stdy_grp, '.RData')))
-# where are the NAs coming from?
-metrics <- metrics[!is.na(metrics[['epi']]), ]
-# limit to species
-metrics <- metrics[metrics[['n']] == 1, ]
+metrics <- metrics[!is.na(metrics[['epi_nc']]), ]
 # remove _
 metrics[['node.label']] <- gsub("_", " ", metrics[['node.label']])
 
 # PARITION
-lfs <- metrics[metrics[['epi']] < cutoff, ]
+lfs <- metrics[metrics[['epi_nc']] < cutoff, ]
+lfs[order(lfs$epi_nc),]
 
 # SEARCH IUCN
 lfs_nrrtvs <- list()

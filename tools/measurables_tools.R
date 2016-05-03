@@ -1,5 +1,22 @@
 # In-house functions for running pipeline
 
+rmvMssg <- function(dt, prp=0.5) {
+  # Remove missing values from a matrix iteratively
+  while(TRUE) {
+    csums <- colSums(!is.na(dt))
+    rsums <- rowSums(!is.na(dt))
+    mean_present <- mean(csums/nrow(dt))
+    if(mean_present > prp) {
+      break
+    }
+    dt <- dt[ ,csums > min(csums)]
+    dt <- dt[rsums > min(rsums), ]
+    cvars <- apply(dt, MARGIN=2, FUN=var, na.rm=TRUE)
+    dt <- dt[ ,cvars != 0]
+  }
+  dt
+}
+
 reduceChrctrMtrx <- function(chars, pcut=0.95) {
   # Reduce a character matrix to independent componenets using PCA
   # Requires a character matrix, returns characters binned using Sturges' method.
@@ -14,6 +31,7 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
   #  character matrix
   tmp_chars <- matrix(NA, nrow=nrow(chars),
                       ncol=ncol(chars))
+  rownames(tmp_chars) <- rownames(chars)
   for(i in 1:ncol(chars)) {
     # convert non-numeric to numbers
     if(any(tolower(chars[ ,i]) %in% letters)) {
@@ -22,10 +40,7 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
     }
     tmp_chars[,i] <- as.numeric(chars[,i])
   }
-  rownames(tmp_chars) <- rownames(chars)
-  csums <- colSums(!is.na(tmp_chars))
-  tmp_chars <- tmp_chars[, csums == max(csums)]
-  tmp_chars <- na.omit(tmp_chars)
+  tmp_chars <- rmvMssg(tmp_chars, 0.999)
   res <- prcomp(tmp_chars)
   prop.var <- round(sapply(res$sdev^2,
                            function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
