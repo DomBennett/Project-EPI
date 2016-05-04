@@ -69,15 +69,18 @@ phylo <- read.tree (file.path (input.dir, "bininda.txt"))
 if (!is.binary.tree (phylo)) {
   phylo <- multi2di (phylo)
 }
-#node.labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
-node.labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, datasource=1)
-node.labels <- paste0(node.labels, '_', 1:phylo$Nnode)  # prevent duplicates
-all.node.labels <- c(gsub("_", " ", phylo$tip.label), node.labels)
-phylo$node.labels <- all.node.labels
+clades <- MoreTreeTools::getClades(phylo)
+children <- list()
+children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+#clade_labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE)
+clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
+clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
+phylo$clade_labels <- clade_labels
 chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 # missing data
 #sum(is.na (chars))*100/(nrow (chars) * ncol (chars))
-data <- list (phylo = phylo, chars = chars)
+data <- list (phylo = phylo, chars = chars, children=children)
 save (data, file = file.path (output.dir, "mammal.RData"))
 
 # DATA -- Birds
@@ -85,10 +88,13 @@ file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path (input.dir, file))
 # take random subset for now
 phylo <- read.tree(file.path(input.dir, 'jetz.tre'))
-node.labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, datasource=1)
-node.labels <- paste0(node.labels, '_', 1:phylo$Nnode)  # prevent duplicates
-all.node.labels <- c(gsub("_", " ", phylo$tip.label), node.labels)
-phylo$node.labels <- all.node.labels
+clades <- MoreTreeTools::getClades(phylo)
+children <- list()
+children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE)
+clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
+clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
+phylo$clade_labels <- clade_labels
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
 # NAs for missing taxa
@@ -102,5 +108,5 @@ for(i in 1:nrow(livezy)) {
     }
   }
 }
-data <- list (phylo = phylo, chars = livezy_mod)
+data <- list (phylo = phylo, chars = livezy_mod, children=children)
 save (data, file = file.path (output.dir, "bird.RData"))
