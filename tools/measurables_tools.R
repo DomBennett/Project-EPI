@@ -6,7 +6,7 @@ rmvMssg <- function(dt, prp=0.5) {
     csums <- colSums(!is.na(dt))
     rsums <- rowSums(!is.na(dt))
     mean_present <- mean(csums/nrow(dt))
-    if(mean_present > prp) {
+    if(mean_present >= prp) {
       break
     }
     dt <- dt[ ,csums > min(csums)]
@@ -40,7 +40,7 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
     }
     tmp_chars[,i] <- as.numeric(chars[,i])
   }
-  tmp_chars <- rmvMssg(tmp_chars, 0.999)
+  tmp_chars <- rmvMssg(tmp_chars, pcut)
   res <- prcomp(tmp_chars)
   prop.var <- round(sapply(res$sdev^2,
                            function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
