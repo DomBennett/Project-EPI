@@ -13,7 +13,7 @@ addNodeAges <- function (phylo) {
 addEdgeLabels <- function (phylo) {
   findLabel <- function (i) {
     node <- phylo$edge[i,1]
-    phylo$node.label[i]
+    phylo$clade_labels[i]
   }
   phylo$edge.label <- mdply (.data = data.frame (i = 1:nrow (phylo$edge)),
                              .fun = findLabel)[ ,2]
@@ -64,7 +64,7 @@ calcMetrics <- function (phylo) {
   calcEachNode <- function (node) {
     #node <- phylo$edge[i,2]
     edge <- which (phylo$edge[ ,2] == node)
-    node.label <- phylo$node.label[node]
+    clade_label <- phylo$clade_labels[node]
     temp.edges <- MoreTreeTools::getEdges(phylo, node=node, type=3)
     descs <- phylo$desc[[node]]
     n <- length(descs)
@@ -90,13 +90,14 @@ calcMetrics <- function (phylo) {
       d.edge.length <- sum (phylo$edge.length[comp.edges])
     }
     mean.change <- (s.edge.change + d.edge.change)/(s.edge.length + d.edge.length)
+    pd <- s.edge.length + d.edge.length
     temp.eds <- phylo$eds[phylo$eds$sp %in% descs,2]
     mean.ed <- mean (temp.eds)
     sd.ed <- sd (temp.eds)
     sister.node <- MoreTreeTools::getSister(phylo, node=node)
-    data.frame (node, node.label, sister.node, n, s.edge.length, s.edge.change,
-                d.edge.length, d.edge.change, time.split, mean.change, mean.ed, sd.ed,
-                stringsAsFactors=FALSE)
+    data.frame (node, clade_label, sister.node, n, s.edge.length, s.edge.change,
+                d.edge.length, d.edge.change, pd, time.split, mean.change, mean.ed,
+                sd.ed, stringsAsFactors=FALSE)
   }
   addSisterContrasts <- function (i) {
     sister.node <- res[i,'sister.node']
@@ -107,7 +108,9 @@ calcMetrics <- function (phylo) {
     contrast.change <- contrast.change - 1
     contrast.n <- res$n[i]/res$n[sister.i]
     contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
-    data.frame (contrast.change, contrast.n, contrast.ed, stringsAsFactors=FALSE)
+    contrast.pd <- res$pd[i]/res$pd[sister.i]
+    data.frame (contrast.change, contrast.n, contrast.pd,
+                contrast.ed, stringsAsFactors=FALSE)
   }
   # all nodes apart from root
   nodes <- c (1:length (phylo$tip.label),
