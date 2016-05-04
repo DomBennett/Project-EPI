@@ -32,7 +32,7 @@ rm(data)
 
 # PROCESS
 cat("Reducing character matrix ...\n")
-chars <- reduceChrctrMtrx(chars, pcut=0.95)
+chars <- reduceChrctrMtrx(chars, pcut=0.99)
 cat("Estimating ancestral node states ...\n")
 reconstruction.obj <- parsimonyReconstruction(chars, phylo)
 cat("Calculating edge changes ...\n")
