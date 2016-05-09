@@ -94,21 +94,32 @@ calcMetrics <- function (phylo) {
     temp.eds <- phylo$eds[phylo$eds$sp %in% descs,2]
     mean.ed <- mean (temp.eds)
     sd.ed <- sd (temp.eds)
-    sister.node <- MoreTreeTools::getSister(phylo, node=node)
+    parent <- MoreTreeTools::getParent(phylo, node=node)
+    if(sum(phylo$edge[ ,1] == parent) > 2) {
+      # polytomous parent
+      sister.node <- NA
+    } else {
+      sister.node <- MoreTreeTools::getSister(phylo, node=node)
+    }
     data.frame (node, clade_label, sister.node, n, s.edge.length, s.edge.change,
                 d.edge.length, d.edge.change, pd, time.split, mean.change, mean.ed,
                 sd.ed, stringsAsFactors=FALSE)
   }
   addSisterContrasts <- function (i) {
     sister.node <- res[i,'sister.node']
-    sister.i <- which (res$node == sister.node)
-    # add 1 and remove 1 to avoid Inf
-    contrast.change <- (res$mean.change[i] + 1)/
-      (res$mean.change[sister.i] + 1)
-    contrast.change <- contrast.change - 1
-    contrast.n <- res$n[i]/res$n[sister.i]
-    contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
-    contrast.pd <- res$pd[i]/res$pd[sister.i]
+    if(is.na(sister.node)) {
+      contrast.change <- contrast.n <- contrast.ed <-
+        contrast.pd <- NA
+    } else {
+      sister.i <- which (res$node == sister.node)
+      # add 1 and remove 1 to avoid Inf
+      contrast.change <- (res$mean.change[i] + 1)/
+        (res$mean.change[sister.i] + 1)
+      contrast.change <- contrast.change - 1
+      contrast.n <- res$n[i]/res$n[sister.i]
+      contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
+      contrast.pd <- res$pd[i]/res$pd[sister.i]
+    }
     data.frame (contrast.change, contrast.n, contrast.pd,
                 contrast.ed, stringsAsFactors=FALSE)
   }
