@@ -25,7 +25,6 @@ if(!file.exists(output.dir)) {
 cat("Importing data ...\n")
 load(file.path(input.dir, paste0(stdy_grp, '.RData')))
 
-
 # PROCESS
 cat("Calculating EPI ...\n")
 metrics <- calcMetrics(phylo)
@@ -44,7 +43,7 @@ metrics$epi_nc <- success - time
 pdf(file.path('figures', paste0(stdy_grp, '_epicheck.pdf')))
 EPIChecker(metrics, 0.05)
 dev.off()
-#metrics$node.label[order(metrics$epi)[1:10]]
+#metrics$clade_label[order(metrics$epi_nc)[1:25]]
 
 # OUTPUT
 cat("Outputting ...\n")
