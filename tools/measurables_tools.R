@@ -232,6 +232,10 @@ parsimonyReconstruction <- function(chars, phylo, order.numeric = TRUE,
     } else {
       reduced.tree <- phylo
     }
+    # make sure bifurcating
+    if (!is.binary.tree (reduced.tree)) {
+      reduced.tree <- multi2di (reduced.tree)
+    }
     # Convert chars to numeric and use primitive state for outgroup
     non.numeric.chars <- FALSE
     if(order.numeric) {
