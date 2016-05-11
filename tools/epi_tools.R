@@ -1,4 +1,17 @@
 
+normalise <- function(xs) {
+  (xs - min(xs, na.rm=TRUE)) /
+    ( max(xs, na.rm=TRUE) - min(xs, na.rm=TRUE) )
+}
+
+getSisters <- function(phylo, node) {
+  parent <- MoreTreeTools::getParent(phylo, node=node)
+  sister.edges <- phylo$edge[ ,1] == parent
+  sister.nodes <- phylo$edge[sister.edges, 2]
+  sister.nodes <- sister.nodes[sister.nodes != node]
+  sister.nodes
+}
+
 addNodeAges <- function (phylo) {
   # Add node.ages to phylo object
   phylo.age <- max (diag (vcv.phylo (phylo)))
@@ -75,6 +88,7 @@ calcMetrics <- function (phylo) {
       d.edge.length <- 0
       d.edge.change <- 0
       time.split <- phylo$edge.length[edge]
+      pd <- s.edge.length
     } else {
       # make it 0 if NA
       if(is.na(s.edge.change)) {
@@ -88,40 +102,33 @@ calcMetrics <- function (phylo) {
       comp.edges <- temp.edges[which (!is.na (temp.edge.changes))]
       d.edge.change <- sum (phylo$edge.changes[comp.edges])
       d.edge.length <- sum (phylo$edge.length[comp.edges])
+      pd <- sum(phylo$edge.length[temp.edges])
     }
     mean.change <- (s.edge.change + d.edge.change)/(s.edge.length + d.edge.length)
-    pd <- s.edge.length + d.edge.length
     temp.eds <- phylo$eds[phylo$eds$sp %in% descs,2]
     mean.ed <- mean (temp.eds)
     sd.ed <- sd (temp.eds)
-    parent <- MoreTreeTools::getParent(phylo, node=node)
-    if(sum(phylo$edge[ ,1] == parent) > 2) {
-      # polytomous parent
-      sister.node <- NA
-    } else {
-      sister.node <- MoreTreeTools::getSister(phylo, node=node)
-    }
-    data.frame (node, clade_label, sister.node, n, s.edge.length, s.edge.change,
-                d.edge.length, d.edge.change, pd, time.split, mean.change, mean.ed,
-                sd.ed, stringsAsFactors=FALSE)
+    data.frame(node, clade_label, n, s.edge.length, s.edge.change,
+         d.edge.length, d.edge.change, pd, time.split, mean.change, mean.ed,
+         sd.ed, stringsAsFactors=FALSE)
   }
   addSisterContrasts <- function (i) {
-    sister.node <- res[i,'sister.node']
-    if(is.na(sister.node)) {
-      contrast.change <- contrast.n <- contrast.ed <-
-        contrast.pd <- NA
-    } else {
-      sister.i <- which (res$node == sister.node)
-      # add 1 and remove 1 to avoid Inf
-      contrast.change <- (res$mean.change[i] + 1)/
-        (res$mean.change[sister.i] + 1)
-      contrast.change <- contrast.change - 1
-      contrast.n <- res$n[i]/res$n[sister.i]
-      contrast.ed <- res$mean.ed[i]/res$mean.ed[sister.i]
-      contrast.pd <- res$pd[i]/res$pd[sister.i]
-    }
-    data.frame (contrast.change, contrast.n, contrast.pd,
-                contrast.ed, stringsAsFactors=FALSE)
+    sister.node <- getSisters(phylo, res$node[i])
+    sister.i <- which(res$node %in% sister.node)
+    # add 1 and remove 1 to avoid Inf
+    contrast.change <- (res$mean.change[i] + 1)/
+      (mean(res$mean.change[sister.i], na.rm=TRUE) + 1)
+    contrast.change <- contrast.change - 1
+    contrast.n <- res$n[i]/mean(res$n[sister.i], na.rm=TRUE)
+    contrast.ed1 <- res$mean.ed[i]/mean(res$mean.ed[sister.i], na.rm=TRUE)
+    contrast.ed2 <- (res$pd[i]/res$n[i])/(mean(res$pd[sister.i], na.rm=TRUE)/
+                            mean(res$n[sister.i], na.rm=TRUE))
+    contrast.pd1 <- res$pd[i] / mean(res$pd[sister.i], na.rm=TRUE)
+    contrast.pd2 <- res$pd[i] - mean(res$pd[sister.i], na.rm=TRUE)
+    contrast.s.edge.length <- res$s.edge.length[i]/
+      mean(res$s.edge.length[sister.i], na.rm=TRUE)
+    data.frame (contrast.change, contrast.n, contrast.pd1, contrast.pd2,
+                contrast.ed1, contrast.ed2, contrast.s.edge.length, stringsAsFactors=FALSE)
   }
   # all nodes apart from root
   nodes <- c (1:length (phylo$tip.label),

@@ -28,22 +28,23 @@ load(file.path(input.dir, paste0(stdy_grp, '.RData')))
 # PROCESS
 cat("Calculating EPI ...\n")
 metrics <- calcMetrics(phylo)
-time <- log (metrics$contrast.ed)
-time <- time / max (time, na.rm=TRUE)
-success <- log (metrics$contrast.n)
-success <- success / max (success, na.rm=TRUE)
-#change <- log (metrics$contrast.change)  # +1?
+time <- metrics$contrast.ed1
+success <- metrics$contrast.n
+success <- log(metrics$contrast.n)
 change <- metrics$contrast.change
-change <- change/max (change, na.rm=TRUE)
 metrics$success <- success
 metrics$time <- time
 metrics$change <- change
 metrics$epi <- ((change + success)/2) - time
-metrics$epi_nc <- success - time
+metrics$epi_nc <- (success - time)
+bool <- metrics$time.split < 50  # ignore less than 50MY
+metrics$epi_nc[bool] <- NA
+metrics$epi[bool] <- NA
 pdf(file.path('figures', paste0(stdy_grp, '_epicheck.pdf')))
 EPIChecker(metrics, 0.05)
 dev.off()
-#metrics$clade_label[order(metrics$epi_nc)[1:25]]
+#metrics$clade_label[order(metrics$epi_nc)[1:50]]
+#metrics$clade_label[order(metrics$epi)[1:25]]
 
 # OUTPUT
 cat("Outputting ...\n")
