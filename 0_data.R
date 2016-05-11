@@ -3,6 +3,8 @@
 # LIBS
 library(ape)
 library(plyr)
+library (foreach)
+library (doMC)
 source (file.path('tools', "ReadNexusData.R"))
 
 # FUNCTIONS
@@ -66,47 +68,51 @@ oleary <- readNexusData (file.path (input.dir, file))
 chars <- merge (oleary, pantheria, by = 0, all = TRUE)
 rownames (chars) <- c (rownames (oleary) [!rownames (oleary) %in% rownames (pantheria)], rownames (pantheria))
 phylo <- read.tree (file.path (input.dir, "bininda.txt"))
-if (!is.binary.tree (phylo)) {
-  phylo <- multi2di (phylo)
-}
 clades <- MoreTreeTools::getClades(phylo)
 children <- list()
 children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
 #clade_labels <- paste0('n', 1:(length(phylo$tip.label) + phylo$Nnode))
-clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE)
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, cache=TRUE,
+                                             parent="Mammalia")
 clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
 clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
 phylo$clade_labels <- clade_labels
 chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 # missing data
 #sum(is.na (chars))*100/(nrow (chars) * ncol (chars))
-data <- list (phylo = phylo, chars = chars, children=children)
+data <- list (phylos = phylo, chars = chars, children=children)
 save (data, file = file.path (output.dir, "mammal.RData"))
 
 # DATA -- Birds
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path (input.dir, file))
-# take random subset for now
-phylo <- read.tree(file.path(input.dir, 'jetz.tre'))
-clades <- MoreTreeTools::getClades(phylo)
-children <- list()
-children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
-clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE)
-clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
-clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
-phylo$clade_labels <- clade_labels
+phylos <- read.tree(file.path(input.dir, 'jetz_aves.tre'))
+clade_labels <- foreach(i=1:length(phylos)) %dopar% {
+  clades <- MoreTreeTools::getClades(phylos[[i]])
+  children <- list()
+  children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+  clade_labels <- MoreTreeTools::getNodeLabels(phylos[[i]], all=FALSE, cache=TRUE,
+                                               parent="Aves")
+  clade_labels <- paste0(clade_labels, '_', 1:phylos[[i]]$Nnode)  # prevent duplicates
+  clade_labels <- c(gsub("_", " ", phylos[[i]]$tip.label), clade_labels)
+  clade_labels
+}
+for(i in 1:length(phylos)) {
+  phylos[[i]]$clade_labels <- clade_labels[[i]]
+}
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
 # NAs for missing taxa
-livezy_mod <- matrix(data=NA, nrow=length(phylo$tip.label), ncol=ncol(livezy))
-rownames(livezy_mod) <- phylo$tip.label
+# use last phylo in loop
+livezy_mod <- matrix(data=NA, nrow=length(phylos[i]$tip.label), ncol=ncol(livezy))
+rownames(livezy_mod) <- phylos[i]$tip.label
 for(i in 1:nrow(livezy)) {
-  mtchs <- which(grepl(rownames(livezy)[i], phylo$tip.label))
+  mtchs <- which(grepl(rownames(livezy)[i], phylos[i]$tip.label))
   if(length(mtchs) > 1) {
     for(j in mtchs) {
-      livezy_mod[phylo$tip.label[j], ] <- livezy[i, ]
+      livezy_mod[phylos[i]$tip.label[j], ] <- livezy[i, ]
     }
   }
 }
-data <- list (phylo = phylo, chars = livezy_mod, children=children)
+data <- list (phylo = phylos, chars = livezy_mod, children=children)
 save (data, file = file.path (output.dir, "bird.RData"))

@@ -11,6 +11,8 @@ source('parameters.R')
 cat("Loading functions ...\n")
 library(ape)
 library(plyr)
+library (foreach)
+library (doMC)
 source(file.path("tools", "measurables_tools.R"))
 
 # DIRS
@@ -23,7 +25,7 @@ if(!file.exists(output.dir)) {
 # INPUT
 cat("Importing data ...\n")
 load(file.path(input.dir, paste0(stdy_grp, '.RData')))
-phylo <- data[["phylo"]]
+phylos <- data[["phylos"]]
 chars <- data[["chars"]]
 rm(data)
 # # test with mangeable size
@@ -33,14 +35,16 @@ rm(data)
 # PROCESS
 cat("Reducing character matrix ...\n")
 chars <- reduceChrctrMtrx(chars, pcut=1)
-cat("Estimating ancestral node states ...\n")
-reconstruction.obj <- parsimonyReconstruction(chars, phylo)
-cat("Calculating edge changes ...\n")
-phylo <- calcChange(phylo, reconstruction.obj, parallel=parallel)
-cat("Calculating fair proportion ...\n")
-phylo <- calcTime(phylo)
-cat("Calculating N descendants ...\n")
-phylo <- calcSuccess(phylo)
+counter <- foreach(i=1:length(phylos)) %dopar% {
+  cat("Estimating ancestral node states ...\n")
+  reconstruction.obj <- parsimonyReconstruction(chars, phylos[i])
+  cat("Calculating edge changes ...\n")
+  phylos[i] <- calcChange(phylos[i], reconstruction.obj)
+  cat("Calculating fair proportion ...\n")
+  phylos[i] <- calcTime(phylos[i])
+  cat("Calculating N descendants ...\n")
+  phylos[i] <- calcSuccess(phylos[i])
+}
 
 # OUTPUT
 cat("Outputting ...\n")
