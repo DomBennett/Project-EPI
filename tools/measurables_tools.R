@@ -192,7 +192,7 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   edge.changes <- ddply(.data = res, .variables = .(f.node), .fun = summarize,
                         mean.change = mean(change), n = length(change),
                         .parallel=parallel)
-  mean.changes <- edge.changes$mean.change[match(phylo$edge[ ,2], edge.changes$f.node)]
+  mean.changes <- edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
   f.phylo$edge.changes <- mean.changes
   f.phylo
 }
