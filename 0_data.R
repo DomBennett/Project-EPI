@@ -3,8 +3,6 @@
 # LIBS
 library(ape)
 library(plyr)
-library (foreach)
-library (doMC)
 source (file.path('tools', "ReadNexusData.R"))
 
 # FUNCTIONS
@@ -87,7 +85,7 @@ save (data, file = file.path (output.dir, "mammal.RData"))
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path (input.dir, file))
 phylos <- read.tree(file.path(input.dir, 'jetz_aves.tre'))
-clade_labels <- foreach(i=1:length(phylos)) %dopar% {
+for(i in 1:length(phylos)) {
   clades <- MoreTreeTools::getClades(phylos[[i]])
   children <- list()
   children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
@@ -95,10 +93,7 @@ clade_labels <- foreach(i=1:length(phylos)) %dopar% {
                                                parent="Aves")
   clade_labels <- paste0(clade_labels, '_', 1:phylos[[i]]$Nnode)  # prevent duplicates
   clade_labels <- c(gsub("_", " ", phylos[[i]]$tip.label), clade_labels)
-  clade_labels
-}
-for(i in 1:length(phylos)) {
-  phylos[[i]]$clade_labels <- clade_labels[[i]]
+  phylos[[i]]$clade_labels <- clade_labels
 }
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
