@@ -99,15 +99,16 @@ for(i in 1:length(phylos)) {
 # use character matching to assign the same value to memebers of the same group
 # NAs for missing taxa
 # use last phylo in loop
-livezy_mod <- matrix(data=NA, nrow=length(phylos[i]$tip.label), ncol=ncol(livezy))
-rownames(livezy_mod) <- phylos[i]$tip.label
+p <- phylos[[1]]
+livezy_mod <- matrix(data=NA, nrow=length(p$tip.label), ncol=ncol(livezy))
+rownames(livezy_mod) <- p$tip.label
 for(i in 1:nrow(livezy)) {
-  mtchs <- which(grepl(rownames(livezy)[i], phylos[i]$tip.label))
+  mtchs <- which(grepl(rownames(livezy)[i], p$tip.label))
   if(length(mtchs) > 1) {
     for(j in mtchs) {
-      livezy_mod[phylos[i]$tip.label[j], ] <- livezy[i, ]
+      livezy_mod[p$tip.label[j], ] <- livezy[i, ]
     }
   }
 }
-data <- list (phylo = phylos, chars = livezy_mod, children=children)
+data <- list (phylos = phylos, chars = livezy_mod, children=children)
 save (data, file = file.path (output.dir, "bird.RData"))
