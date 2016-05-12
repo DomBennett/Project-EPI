@@ -35,20 +35,32 @@ rm(data)
 # PROCESS
 cat("Reducing character matrix ...\n")
 chars <- reduceChrctrMtrx(chars, pcut=1)
-counter <- foreach(i=1:length(phylos)) %dopar% {
+if(length(phylos) > 1) {
+  phylos <- foreach(p=phylos) %dopar% {
+    cat("Estimating ancestral node states ...\n")
+    reconstruction.obj <- parsimonyReconstruction(chars, p)
+    cat("Calculating edge changes ...\n")
+    p <- calcChange(p, reconstruction.obj)
+    cat("Calculating fair proportion ...\n")
+    p <- calcTime(p)
+    cat("Calculating N descendants ...\n")
+    p <- calcSuccess(p)
+    p
+  }
+} else {
   cat("Estimating ancestral node states ...\n")
-  reconstruction.obj <- parsimonyReconstruction(chars, phylos[i])
+  reconstruction.obj <- parsimonyReconstruction(chars, phylos[[1]])
   cat("Calculating edge changes ...\n")
-  phylos[i] <- calcChange(phylos[i], reconstruction.obj)
+  phylos[[1]] <- calcChange(phylos[[1]], reconstruction.obj, parallel=TRUE)
   cat("Calculating fair proportion ...\n")
-  phylos[i] <- calcTime(phylos[i])
+  phylos[[1]] <- calcTime(phylos[[1]])
   cat("Calculating N descendants ...\n")
-  phylos[i] <- calcSuccess(phylos[i])
+  phylos[[1]] <- calcSuccess(phylos[[1]])
 }
 
 # OUTPUT
 cat("Outputting ...\n")
-save(phylo, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
+save(phylos, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
 
 # END
 cat(paste0('\nStage `mesurables` finished at [', Sys.time(), ']\n'))
