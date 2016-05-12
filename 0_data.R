@@ -78,7 +78,7 @@ phylo$clade_labels <- clade_labels
 chars <- chars[rownames (chars) %in% phylo$tip.label, ]
 # missing data
 #sum(is.na (chars))*100/(nrow (chars) * ncol (chars))
-data <- list (phylos = phylo, chars = chars, children=children)
+data <- list (phylos = list(phylo), chars = chars, children=children)
 save (data, file = file.path (output.dir, "mammal.RData"))
 
 # DATA -- Birds
