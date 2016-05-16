@@ -67,6 +67,7 @@ for(i in 1:length(names_lines)) {
 }
 nms_obj <- nms_obj[!to_drp]
 node_obj <- node_obj[!to_drp]
+txids <- txids[!to_drp]
 cat("Done. [", length(node_obj), "] nodes with valid taxonomic names.\n", sep="")
 
 # ADD KIDS TO NODES
@@ -110,16 +111,18 @@ cat('Done.\n')
 cat("Calculating contrast N ....\n")
 for(i in 1:length(node_obj)) {
   sstrs <- node_obj[[i]][['sstr']]
-  if(!is.null(sstrs) && length(sstrs) > 1) {
+  if(!is.null(sstrs) && length(sstrs) > 0) {
     cns <- vector(length=length(sstrs))
     names(cns) <- sstrs
-    n <- length(length(node_obj[[i]][['kids']]))
-    for(j in 1:length(sstrs)) {
-      si <- which(txids == sstrs[j])
-      sstr_n <- length(node_obj[[si]][['kids']])
-      cns[j] <- n/sstr_n
+    n <- length(node_obj[[i]][['kids']])
+    if(n > 0) {
+      for(j in 1:length(sstrs)) {
+        si <- which(txids == sstrs[j])
+        sstr_n <- length(node_obj[[si]][['kids']])
+        cns[j] <- n/sstr_n
+      }
+      node_obj[[i]][['cntrst_n']] <- cns
     }
-    node_obj[[i]][['cntrst_n']] <- cns
   }
 }
 cat('Done.\n')
@@ -140,9 +143,9 @@ cat('Done. Ignoring [', sum(ignore_bool),'] and keeping [',
 # TOP-10
 cat("And the top 100 NCBI contrast N nodes are....\n")
 tmp_nodes <- node_obj[!ignore_bool]
-nms_nodes <- nms_obj[!ignore_bool]
+tmp_nms <- nms_obj[!ignore_bool]
 cntrst_ns <- unlist(lapply(tmp_nodes, function(x) min(x[['cntrst_n']])))
-nms <- unlist(lapply(nms_nodes, function(x) x[['scientific name']]))
+nms <- unlist(lapply(tmp_nms, function(x) x[['scientific name']]))
 ordrd <- order(cntrst_ns)[1:100]
 for(i in ordrd) {
   nm <- nms[i]
@@ -150,7 +153,6 @@ for(i in ordrd) {
   spcr <- paste0(rep(' ', 33 - nchar(nm)), collapse="")
   cat(nm, spcr, signif(cn, 3), "\n")
 }
-
 
 # OUTPUT
 save(node_obj, nms_obj, ignore_bool, file=output_file)
