@@ -21,20 +21,22 @@ output_file <- file.path("x_ncbi_taxonomy", "res.RData")
 input_dir <- file.path('0_data', 'raw')
 
 # INPUT
-cat("Reading in nodes dump ....\n")
-lines <- readLines(con=file.path(input_dir, 'nodes.dmp'), n=-1L)
-lines <- strsplit(lines, split="\\|")
+cat("Reading in nodes and names dump ....\n")
+nodes_lines <- readLines(con=file.path(input_dir, 'nodes.dmp'), n=10000)
+nodes_lines <- strsplit(nodes_lines, split="\\|")
+names_lines <- readLines(con=file.path(input_dir, 'names.dmp'), n=100000)
+names_lines <- strsplit(names_lines, split="\\|")
 cat("Done.\n")
 
 # CONVERT TO NODE-OBJ
 cat("Parsing and generating node object ....\n")
-node_obj <- vector("list", length=length(lines))
+node_obj <- vector("list", length=length(nodes_lines))
 for(i in 1:length(node_obj)) {
-  division_code <- as.numeric(lines[[i]][5])
+  division_code <- as.numeric(nodes_lines[[i]][5])
   if(division_code %in% division_codes) {
-    txid <- as.numeric(lines[[i]][1])
-    prid <- as.numeric(lines[[i]][2])
-    rank <- gsub('\t', '', lines[[i]][3])
+    txid <- as.numeric(nodes_lines[[i]][1])
+    prid <- as.numeric(nodes_lines[[i]][2])
+    rank <- gsub('\t', '', nodes_lines[[i]][3])
     node_obj[[i]] <- list(txid=txid, prid=prid, ptid=NULL,
                           rank=rank, kids=NULL)
   }
@@ -43,24 +45,29 @@ fnds <- unlist(lapply(node_obj, function(x) !is.null(x)))
 node_obj <- node_obj[fnds]
 sbspp <- unlist(lapply(node_obj, function(x) x[['rank']] == "subspecies"))
 node_obj <- node_obj[!sbspp]
+txids <- unlist(lapply(node_obj, function(x) x[['txid']]))
 cat("Done. Identified [", length(node_obj), "] valid taxonomic nodes.\n", sep="")
 
-# RETRIEVE NAMES
-cat("Searching names via NCBI ....\n")
-for(i in 1:length(node_obj)) {
-  txid <- node_obj[[i]][['txid']]
-  nm <- fetchName(txid)
-  node_obj[[i]][['name']] <- nm
+# PARSE NAMES
+cat("Parsing names ....\n")
+to_drp <- vector(length=length(txids))
+nms_obj <- vector('list', length=length(txids))
+names(nms_obj) <- txids
+for(i in 1:length(names_lines)) {
+  txid <- as.numeric(names_lines[[i]][1])
+  if(txid %in% txids) {
+    j <- which(txids == txid)
+    nm <- gsub('\t', '', names_lines[[i]][2])
+    to_drp[j] <- grepl("unclassified", nm)[[1]]
+    nm_typ <- gsub('\t', '', names_lines[[i]][4])
+    nms <- nms_obj[[which(txids == txid)]]
+    nms_obj[[j]] <- c(nms, nm)
+    names(nms_obj[[j]]) <- c(names(nms), nm_typ)
+  }
 }
-cat('Done.\n')
-
-# REMOVE IGNORE NAMES
-cat("Dropping nodes with invalid names ....\n")
-nms <- unlist(lapply(node_obj, function(x) x[['name']]))
-to_drp <- grepl("unclassified", nms)
+nms_obj <- nms_obj[!to_drp]
 node_obj <- node_obj[!to_drp]
-txids <- unlist(lapply(node_obj, function(x) x[['txid']]))
-cat('Done. Dropped [', sum(to_drp),']\n', sep='')
+cat("Done. [", length(node_obj), "] nodes with valid taxonomic names.\n", sep="")
 
 # ADD KIDS TO NODES
 cat("Adding kids to node object ....\n")
@@ -131,14 +138,22 @@ cat('Done. Ignoring [', sum(ignore_bool),'] and keeping [',
     sum(!ignore_bool),'].\n', sep="")
 
 # TOP-10
-cat("And the top 10 NCBI contrast N nodes are....")
-tmp <- node_obj[!ignore_bool]
-cntrst_ns <- unlist(lapply(tmp, function(x) min(x[['cntrst_n']])))
-nms <- unlist(lapply(tmp, function(x) x[['name']]))
-print(nms[order(cntrst_ns)][1:10])
+cat("And the top 100 NCBI contrast N nodes are....\n")
+tmp_nodes <- node_obj[!ignore_bool]
+nms_nodes <- nms_obj[!ignore_bool]
+cntrst_ns <- unlist(lapply(tmp_nodes, function(x) min(x[['cntrst_n']])))
+nms <- unlist(lapply(nms_nodes, function(x) x[['scientific name']]))
+ordrd <- order(cntrst_ns)[1:100]
+for(i in ordrd) {
+  nm <- nms[i]
+  cn <- cntrst_ns[i]
+  spcr <- paste0(rep(' ', 33 - nchar(nm)), collapse="")
+  cat(nm, spcr, signif(cn, 3), "\n")
+}
+
 
 # OUTPUT
-save(node_obj, ignore_bool, file=output_file)
+save(node_obj, nms_obj, ignore_bool, file=output_file)
 
 # END
 cat(paste0('\nStage `NCBI taxonomy` finished at [', Sys.time(), ']\n'))
