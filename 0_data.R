@@ -112,3 +112,42 @@ for(i in 1:nrow(livezy)) {
 }
 data <- list (phylos = phylos, chars = livezy_mod, children=children)
 save (data, file = file.path (output.dir, "bird.RData"))
+
+# DATA -- Squamates
+phylo <- read.tree(file.path(input.dir, 'pyron_squamata.tre'))
+clades <- MoreTreeTools::getClades(phylo)
+children <- list()
+children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, cache=TRUE,
+                                             parent="Squamata")
+clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
+clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
+phylo$clade_labels <- clade_labels
+data <- list (phylos=list(phylo), children=children)
+save (data, file=file.path (output.dir, "squamates.RData"))
+
+# DATA -- Trachaeophytes
+phylo <- read.tree(file.path(input.dir, 'durka_trachaeophyta.tre'))
+clades <- MoreTreeTools::getClades(phylo)
+children <- list()
+children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, cache=TRUE,
+                                             parent="Tracheophyta")
+clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
+clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
+phylo$clade_labels <- clade_labels
+data <- list(phylos=list(phylo), children=children)
+save (data, file=file.path (output.dir, "plants.RData"))
+
+# DATA -- Hymenoptera
+phylo <- read.tree(file.path(input.dir, 'danforth_hymenoptera.tre'))
+clades <- MoreTreeTools::getClades(phylo)
+children <- list()
+children[clades$clade.node] <- gsub("_", " ", clades$clade.children)
+clade_labels <- MoreTreeTools::getNodeLabels(phylo, all=FALSE, cache=TRUE,
+                                             parent="Hymenoptera")
+clade_labels <- paste0(clade_labels, '_', 1:phylo$Nnode)  # prevent duplicates
+clade_labels <- c(gsub("_", " ", phylo$tip.label), clade_labels)
+phylo$clade_labels <- clade_labels
+data <- list(phylos=list(phylo), children=children)
+save (data, file=file.path (output.dir, "hymenopterans.RData"))
