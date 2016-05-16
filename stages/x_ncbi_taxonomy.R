@@ -22,9 +22,9 @@ input_dir <- file.path('0_data', 'raw')
 
 # INPUT
 cat("Reading in nodes and names dump ....\n")
-nodes_lines <- readLines(con=file.path(input_dir, 'nodes.dmp'), n=10000)
+nodes_lines <- readLines(con=file.path(input_dir, 'nodes.dmp'), n=-1L)
 nodes_lines <- strsplit(nodes_lines, split="\\|")
-names_lines <- readLines(con=file.path(input_dir, 'names.dmp'), n=100000)
+names_lines <- readLines(con=file.path(input_dir, 'names.dmp'), n=-1L)
 names_lines <- strsplit(names_lines, split="\\|")
 cat("Done.\n")
 
