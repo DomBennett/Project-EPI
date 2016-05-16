@@ -18,7 +18,7 @@ if(!file.exists("x_ncbi_taxonomy")) {
   dir.create("x_ncbi_taxonomy")
 }
 output_file <- file.path("x_ncbi_taxonomy", "res.RData")
-input_dir <- file.path('0_data', 'raw', 'ncbi_taxonomy')
+input_dir <- file.path('0_data', 'raw')
 
 # INPUT
 cat("Reading in nodes dump ....\n")
