@@ -27,7 +27,7 @@ load(file.path(input.dir, paste0(stdy_grp, '.RData')))
 
 # PROCESS
 cat("Calculating EPI ...\n")
-metrics <- calcMetrics(phylo)
+metrics <- calcMetricsPhylo(phylos[[1]])
 time <- metrics$contrast.ed1
 success <- metrics$contrast.n
 success <- log(metrics$contrast.n)

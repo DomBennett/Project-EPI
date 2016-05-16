@@ -33,29 +33,37 @@ rm(data)
 # chars <- chars[phylo$tip.label, sample(1:length(chars), size=100)]
 
 # PROCESS
-cat("Reducing character matrix ...\n")
-chars <- reduceChrctrMtrx(chars, pcut=1)
-if(length(phylos) > 1) {
-  phylos <- foreach(p=phylos) %dopar% {
-    cat("Estimating ancestral node states ...\n")
-    reconstruction.obj <- parsimonyReconstruction(chars, p)
-    cat("Calculating edge changes ...\n")
-    p <- calcChange(p, reconstruction.obj)
-    cat("Calculating fair proportion ...\n")
-    p <- calcTime(p)
-    cat("Calculating N descendants ...\n")
-    p <- calcSuccess(p)
-    p
-  }
-} else {
-  cat("Estimating ancestral node states ...\n")
-  reconstruction.obj <- parsimonyReconstruction(chars, phylos[[1]])
-  cat("Calculating edge changes ...\n")
-  phylos[[1]] <- calcChange(phylos[[1]], reconstruction.obj, parallel=TRUE)
+if(is.null(chars)) {
+  phylos[[1]]$edge.changes <- NA
   cat("Calculating fair proportion ...\n")
   phylos[[1]] <- calcTime(phylos[[1]])
   cat("Calculating N descendants ...\n")
   phylos[[1]] <- calcSuccess(phylos[[1]])
+} else {
+  cat("Reducing character matrix ...\n")
+  chars <- reduceChrctrMtrx(chars, pcut=1)
+  if(length(phylos) > 1) {
+    phylos <- foreach(p=phylos) %dopar% {
+      cat("Estimating ancestral node states ...\n")
+      reconstruction.obj <- parsimonyReconstruction(chars, p)
+      cat("Calculating edge changes ...\n")
+      p <- calcChange(p, reconstruction.obj)
+      cat("Calculating fair proportion ...\n")
+      p <- calcTime(p)
+      cat("Calculating N descendants ...\n")
+      p <- calcSuccess(p)
+      p
+    }
+  } else {
+    cat("Estimating ancestral node states ...\n")
+    reconstruction.obj <- parsimonyReconstruction(chars, phylos[[1]])
+    cat("Calculating edge changes ...\n")
+    phylos[[1]] <- calcChange(phylos[[1]], reconstruction.obj, parallel=TRUE)
+    cat("Calculating fair proportion ...\n")
+    phylos[[1]] <- calcTime(phylos[[1]])
+    cat("Calculating N descendants ...\n")
+    phylos[[1]] <- calcSuccess(phylos[[1]])
+  }
 }
 
 # OUTPUT

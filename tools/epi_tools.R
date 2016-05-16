@@ -64,9 +64,26 @@ plotEdgeChanges <- function (phylo, by.char = FALSE) {
     edgelabels (text = round (phylo$edge.changes, 2))
   }
 }
-  
 
-calcMetrics <- function (phylo) {
+calcMetrics <- function(phylos) {
+  p <- phylos[[1]]
+  res <- calcMetricsPhylo(p)
+  # TODO: how to handle node differences between trees?
+  # if(length(phylos) > 1) {
+  #   clbool <- !colnames(res) %in% c('node', 'clade_label')
+  #   for(p in phylos[2:length(phylos)]) {
+  #     tmp <- calcMetricsPhylo(p)
+  #     rwtmp <- match(tmp[['node']], res[['node']])
+  #     rwtmp <- rwtmp[!is.na(rwtmp)]
+  #     rwres <- match(res[['node']], tmp[['node']])
+  #     rwres <- rwres[!is.na(rwres)]
+  #     res[rwres, clbool] <- (res[rwres, clbool] + tmp[rwtmp, clbool])/2
+  #   }
+  # }
+  res
+}
+
+calcMetricsPhylo <- function (phylo) {
   # Calculate time, success, change and other metrics per node
   #
   # Args:
