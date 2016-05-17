@@ -50,7 +50,7 @@ cat("Done. Identified [", length(node_obj), "] valid taxonomic nodes.\n", sep=""
 
 # PARSE NAMES
 cat("Parsing names ....\n")
-names_lines <- dropNamesLines(names_lines, txids)
+names_lines <- dropNamesLines(names_lines, txids, parallel=TRUE)
 to_drp <- vector(length=length(txids))
 nms_obj <- vector('list', length=length(txids))
 names(nms_obj) <- txids
