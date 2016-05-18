@@ -6,6 +6,11 @@ nt_dir <- "x_ncbi_taxonomy"
 
 load(file.path(nt_dir, "res.Rdata"))
 
+txids <- unlist(lapply(node_obj, function(x) x[['txid']]))
+nms <- unlist(lapply(nms_obj, function(x) x[['scientific name']]))
+which(nms == "Orycteropus afer")
+
+
 # IDENTIFY MATCHING NODES
 
 # MATCH TIPS TO NMS
