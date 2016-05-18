@@ -23,6 +23,7 @@ names_lines <- strsplit(names_lines, split="\\|")
 cat("Done.\n")
 
 # GENERATE NODE OBJECT
+cat("Generating node object ....\n")
 node_obj <- new.env()
 for(i in 1:length(nodes_lines)) {
   division_code <- as.numeric(nodes_lines[[i]][5])
@@ -33,6 +34,7 @@ for(i in 1:length(nodes_lines)) {
     node_obj[[txid]] <- list("prid"=prid, "rank"=rank)
   }
 }
+cat("Done.\n")
 
 # PARSE NAMES
 cat("Parsing names ....\n")
@@ -47,6 +49,7 @@ for(i in 1:length(names_lines)) {
     names(node_obj[[txid]][['nm']]) <- c(names(nms), nm_typ)
   }
 }
+cat("Done.\n")
 
 # OUTPUT
 cat('Saving ....\n')
