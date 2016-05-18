@@ -4,9 +4,6 @@
 # START
 cat(paste0('\nStage `node obj` started at [', Sys.time(), ']\n'))
 
-# FUNCTIONS
-source(file.path('tools', 'ncbi_taxonomy_tools.R'))
-
 # PARAMETERS
 source('parameters.R')
 
