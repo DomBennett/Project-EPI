@@ -70,15 +70,20 @@ for(tree_file in tree_files) {
       if(length(nd_tips) == 0) {
         next
       }
-      mtch_scrs <- vector(length=length(tree_kids))
-      for(j in 1:length(tree_kids)) {
-        mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
-          (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
-      }
-      if(max(mtch_scrs) > 1) {
-        bst_mtch <- which.max(mtch_scrs)[1]
-        node_obj[[txid]][["nid"]] <- nids[bst_mtch]
+      if(length(nd_tips) == 1) {
+        map_obj[[txid]][["nid"]] <- nd_tips
         cc <- cc + 1
+      } else {
+        mtch_scrs <- vector(length=length(tree_kids))
+        for(j in 1:length(tree_kids)) {
+          mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
+            (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
+        }
+        if(max(mtch_scrs) > 1) {
+          bst_mtch <- which.max(mtch_scrs)[1]
+          map_obj[[txid]][["nid"]] <- nids[bst_mtch]
+          cc <- cc + 1
+        }
       }
     }
   }
@@ -86,11 +91,14 @@ for(tree_file in tree_files) {
   
   # FIND PD, ED, PE AND AGE FOR EVERY NODE
   cat("    Adding tree timings to node_obj ....\n")
-  cc <- 0
   ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
+  cc <- 0
   mtxids <- names(map_obj)
   for(txid in mtxids) {
     nid <- map_obj[[txid]][['nid']]
+    if(nid == "n1") {
+      next
+    }
     sid <- getNdSstr(tree, id=nid)[1]
     age <- getNdAge(tree, id=nid)
     kids <- getNdKids(tree, nid)
@@ -104,7 +112,7 @@ for(tree_file in tree_files) {
     node_obj[[txid]][['ed']] <- ed
     node_obj[[txid]][['cntrst_ed']] <- ed/sstr_ed
     node_obj[[txid]][['pe']] <- spn
-    node_obj[[txid]][['cntrst_pe']] <- spn/sstr_spn
+    node_obj[[txid]][['cntrst_pe']] <- (spn + 1)/(sstr_spn + 1)
     node_obj[[txid]][['pd']] <- pd
     node_obj[[txid]][['cntrst_pd1']] <- pd/sstr_pd
     node_obj[[txid]][['cntrst_pd2']] <- pd - sstr_pd
