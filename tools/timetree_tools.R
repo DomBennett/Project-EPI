@@ -40,10 +40,55 @@ getDivergence <- function(id1, id2) {
   kids_1 <- node_obj[[id1]][['kids']]
   kids_2 <- node_obj[[id2]][['kids']]
   if(length(kids_1) > 1) {
-    id1 <- findCommonName(kids_1)
+    nm1 <- findCommonName(kids_1)
+  } else {
+    nm1 <- node_obj[[id1]][['nm']][['scientific name']]
   }
   if(length(kids_2) > 1) {
-    id2 <- findCommonName(kids_2)
+    nm2 <- findCommonName(kids_2)
+  } else {
+    nm2 <- node_obj[[id2]][['nm']][['scientific name']]
   }
-  getTTOL(id1, id2)
+  getTTOL(nm1, nm2)
+}
+
+getTmsplt <- function(txid) {
+  # Return time since split based on divergence from sister
+  sstrs <- node_obj[[txid]][['sstr']]
+  tmsplt <- getDivergence(txid, sstrs[1])
+  if(length(sstrs) > 1) {
+    if(length(sstrs) > 10) {
+      sstrs <- sample(sstrs, 10)
+    }
+    for(j in 2:length(sstrs)) {
+      tmp <- getDivergence(txid, sstrs[j])
+      # always seek greatest time
+      bool <- tmsplt[['mean_ttol']] > tmp[['mean_ttol']]
+      if(!is.na(bool) && bool) {
+        tmsplt <- tmp
+      }
+    }
+  }
+  tmsplt
+}
+
+getAge <- function(txid) {
+  # Return age based on divergence of ptids
+  ptids <- node_obj[[txid]][['ptid']]
+  cmbs <- combn(ptids, 2)
+  age <- getDivergence(cmbs[1,1], cmbs[2,1])
+  if(ncol(cmbs) > 1) {
+    if(ncol(cmbs) > 10) {
+      cmbs <- cmbs[ ,sample(2:ncol(cmbs), 10)]
+    }
+    for(j in 2:ncol(cmbs)) {
+      tmp <- getDivergence(cmbs[1,j], cmbs[2,j])
+      # always seek greatest time
+      bool <- age[['mean_ttol']] > tmp[['mean_ttol']]
+      if(!is.na(bool) && bool) {
+        age <- tmp
+      }
+    }
+  }
+  age
 }

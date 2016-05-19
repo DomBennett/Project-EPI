@@ -22,49 +22,56 @@ output_file <- file.path('4_timetree', 'res.RData')
 # INPUT
 load(input_file)
 
-# LOOK UP SPN
+# LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree for pendant edges ....\n')
-to_drp <- vector(length=length(cnddts))
-for(i in 1:length(cnddts)) {
-  txid <- cnddts[i]
+cc <- 0
+for(txid in cnddts) {
   if('pe' %in% names(node_obj[[txid]])) {
+    cc <- cc + 1
     next
   }
+  print(node_obj[[txid]][['nm']][['scientific name']])
   # get time since split
-  sstrs <- node_obj[[txid]][['sstr']]
-  tmsplt <- getDivergence(txid, sstrs[1])
-  if(length(sids) > 1) {
-    for(j in 2:length(sids)) {
-      tmp <- getDivergence(txid, sids[j])
-      bool <- tmsplt[['mean_ttol']] > tmp[['mean_ttol']]
-      if(!is.na(bool) && bool) {
-        tmsplt <- tmp
-      }
-    }
-  }
-  if(is.na(tmsplt['mean_ttol']) || tmsplt['mean_ttol'] < 50) {
-    to_drp[i] <- TRUE
+  tmsplt <- getTmsplt(txid)
+  if(is.na(tmsplt['mean_ttol'])) {
     next
   }
-  # get age
-  ptids <- node_obj[[i]][['ptid']]
-  cmbs <- combn(ptids, 2)
-  age <- getDivergence(cmbs[1,1], cmbs[2,1])
-  if(ncol(cmbs) > 1) {
-    for(j in 2:length(sids)) {
-      tmp <- getDivergence(cmbs[1,j], cmbs[2,j])
-      bool <- age[['mean_ttol']] > tmp[['mean_ttol']]
-      if(!is.na(bool) && bool) {
-        age <- tmp
-      }
+  # get ages
+  if(node_obj[[txid]][['rank']] == 'species') {
+    age <- 0
+  } else {
+    age <- getAge(txid)
+  }
+  if(is.na(age['mean_ttol']) || age['mean_ttol'] > tmsplt['mean_ttol']) {
+    next
+  }
+  sstrs <- node_obj[[txid]][['sstr']]
+  if(length(sstrs) > 1) {
+    next
+  }
+  sstr_age <- NA
+  for(sstr in sstrs) {
+    tmp <- getAge(sstr)
+    # always go for the greatest time
+    bool <- is.na(sstr_age) || sstr_age[['mean_ttol']] > tmp[['mean_ttol']]
+    if(bool) {
+      sstr_age <- tmp
     }
   }
-  node_obj[[i]][['age']] <- age
-  node_obj[[i]][['tmsplt']] <- tmsplt
-  node_obj[[i]][['pe']] <- tmsplt - age
+  if(is.na(sstr_age[['mean_ttol']])) {
+    next
+  }
+  # get PEs
+  pe <- tmsplt[['mean_ttol']] - age[['mean_ttol']]
+  sstr_pe <- tmsplt[['mean_ttol']] - sstr_age[['mean_ttol']]
+  cntrst_pe <- (pe + 1)/(sstr_pe + 1)
+  # assign
+  node_obj[[txid]][['age']] <- age
+  node_obj[[txid]][['pe']] <- pe
+  node_obj[[txid]][['cntrst_pe']] <- cntrst_pe
+  cc <- cc + 1
 }
-cnddts <- cnddts[!to_drp]
-cat("Done. Time data now available for [", length(cnddts), "] nodes.\n", sep="")
+cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")
 
 # OUTPUT
 cat('Saving ....\n')
