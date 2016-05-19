@@ -134,13 +134,38 @@ for(txid in txids) {
 }
 cat('Done.\n')
 
+# IDENTIFYING LIKELY LFS BASED ON CNTRST_N AND PARENT SIZE
+# this avoids searching timetree nodes that are likely to be young
+cat("Identifying candidates ....\n")
+txids <- ls(node_obj)
+cnddts <- vector(length=length(txids))
+for(i in 1:length(txids)) {
+  cn <- node_obj[[txids[i]]][['cntrst_n']]
+  prid <- node_obj[[txids[i]]][['prid']]
+  if(prid %in% txids) {
+    prnt_n <- length(node_obj[[prid]][['kids']])
+  }
+  bool <- (!is.null(cn) && cn < 0.01) & (prnt_n > 1000 | !prid %in% txids) &
+    (length(sstrs) > 100)
+  if(bool) {
+    cnddts[i] <- TRUE
+  }
+}
+cnddts <- txids[cnddts]
+cat("Done. [", length(cnddts), "] candidates nodes.\n", sep="")
+
+# OUTPUT
+cat('Saving ....\n')
+save(node_obj, cnddts, file=output_file)
+cat('Done.\n')
+
 # TOP-10
 cat("And the top 100 NCBI contrast N nodes are....\n")
-cntrst_ns <- lapply(txids, function(x) node_obj[[x]][['cntrst_n']])
+cntrst_ns <- lapply(cnddts, function(x) node_obj[[x]][['cntrst_n']])
 bool <- unlist(lapply(cntrst_ns, function(x) is.null(x)))
 cntrst_ns <- unlist(cntrst_ns)
-nms <- unlist(lapply(txids[!bool], function(x) node_obj[[x]][['nm']][['scientific name']]))
-rnks <- unlist(lapply(txids[!bool], function(x) node_obj[[x]][['rank']]))
+nms <- unlist(lapply(cnddts[!bool], function(x) node_obj[[x]][['nm']][['scientific name']]))
+rnks <- unlist(lapply(cnddts[!bool], function(x) node_obj[[x]][['rank']]))
 ordrd <- order(cntrst_ns)[1:100]
 cc <- 1
 for(i in ordrd) {
@@ -151,11 +176,6 @@ for(i in ordrd) {
   cat(spcr1, cc, ' | ', nm, spcr2, signif(cn, 3), "\n")
   cc <- cc + 1
 }
-
-# OUTPUT
-cat('Saving ....\n')
-save(node_obj, file=output_file)
-cat('Done.\n')
 
 # END
 cat(paste0('\nStage `cntrst n` finished at [', Sys.time(), ']\n'))
