@@ -1,93 +1,125 @@
+# GET NODE TIMINGS WITH PUBLISHED PHYLOGENIES
+
+# TODO:
+# -- use division codes to minimise looping and calculate for more than just cnddts
+# -- run across tree distributions
+
+# START
+cat(paste0('\nStage `phylotime` started at [', Sys.time(), ']\n'))
+
+# PARAMETERS
+source('parameters.R')
+
+# FUNCTIONS
 library(treeman)
+source(file.path('tools', 'phylotime_tools.R'))
 
 # DIRS
-data_dir <- file.path("0_data", "raw")
-nt_dir <- "x_ncbi_taxonomy"
-
-load(file.path(nt_dir, "res.Rdata"))
-
-txids <- unlist(lapply(node_obj, function(x) x[['txid']]))
-nms <- unlist(lapply(nms_obj, function(x) x[['scientific name']]))
-which(nms == "Orycteropus afer")
-
-
-# IDENTIFY MATCHING NODES
-
-# MATCH TIPS TO NMS
-tps <- gsub("_", " ", tree['tips'])
-for(i in 1:length(nms_obj)) {
-  bool <- nms_obj[[i]] %in% tps
-  if(any(bool)) {
-    node_obj[[i]][['tip_i']] <- which(tps == nms_obj[[i]][bool][1])
-  }
+if(!file.exists('3_phylotime')) {
+  dir.create('3_phylotime')
 }
+phylo_dir <- file.path("0_data", "published_trees")
+input_file <- file.path("2_cntrst_n", "res.RData")
+output_file <- file.path('3_phylotime', 'res.RData')
 
-# MATCH NODES OF INTEREST TO NODES IN TREE
-txids <- names(nms_obj)
-tree_kids <- getNdsKids(tree, ids=tree['nds'])
-for(i in which(!ignore_bool)) {
-  nd_kids <- node_obj[[i]][['kids']]
-  if(is.null(nd_kids)) {
-    next
-  }
-  if(nd_kids[1] == "none") {
-    tip_i <- node_obj[[i]][['tip_i']]
-    if(is.null(tip_i)) {
-      next
+# INPUT
+load(input_file)
+tree_files <- list.files(phylo_dir)
+
+# LOOP THROUGH TREE FILES
+cat("Looping through all published trees ....\n")
+ttl_cc <- 0
+for(tree_file in tree_files) {
+  # INPUT
+  cat('    Reading in [', tree_file, '] ....\n', sep="")
+  tree <- readTree(file.path(phylo_dir, tree_file))
+  map_obj <- list()
+  cat("    Done.\n")
+  
+  # MATCH TIPS TO NMS
+  cat("    Matching tree tips to named species in node_obj ....\n")
+  cc <- 0
+  txids <- ls(node_obj)
+  spp <- unlist(lapply(txids, function(x) if(node_obj[[x]][['rank']] == "species") x))
+  mtch_tps <- gsub("_", " ", tree['tips'])
+  tps <- tree['tips']
+  for(sp in spp) {
+    bool <- node_obj[[sp]][['nm']] %in% mtch_tps
+    if(any(bool)) {
+      map_obj[[sp]][['nid']] <- tps[mtch_tps == node_obj[[sp]][['nm']][bool][1]]
+      cc <- cc + 1
     }
-    node_obj[[i]][["nid"]] <- tree['tips'][tip_i]
-  } else {
-    nd_tips <- vector(length=length(nd_kids))
-    for(j in 1:length(nd_kids)) {
-      tip_i <- node_obj[[which(txids == nd_kids[j])]][['tip_i']]
-      if(!is.null(tip_i)) {
-        nd_kids[j] <- tree['tips'][tip_i]
+  }
+  cat("    Done. Matched [", cc, "] nodes to tips in tree.\n", sep="")
+  
+  # MATCH NODES OF INTEREST TO NODES IN TREE
+  cat("    Matching nodes in node_obj to tree ....\n")
+  cc <- 0
+  nids <- tree['nds']
+  tree_kids <- getNdsKids(tree, ids=nids)
+  for(txid in cnddts) {
+    nd_kids <- node_obj[[txid]][['kids']]
+    if(nd_kids[1] != "none") {
+      nd_tips <- vector(length=length(nd_kids))
+      for(j in 1:length(nd_kids)) {
+        if(!is.null(map_obj[[nd_kids[j]]])) {
+          nd_tips[j] <- map_obj[[nd_kids[j]]][['nid']]
+        }
+      }
+      nd_tips <- nd_tips[nd_tips != FALSE]
+      if(length(nd_tips) == 0) {
+        next
+      }
+      mtch_scrs <- vector(length=length(tree_kids))
+      for(j in 1:length(tree_kids)) {
+        mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
+          (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
+      }
+      if(max(mtch_scrs) > 1) {
+        bst_mtch <- which.max(mtch_scrs)[1]
+        node_obj[[txid]][["nid"]] <- nids[bst_mtch]
+        cc <- cc + 1
       }
     }
-    mtch_scrs <- vector(length=length(tree_kids))
-    for(j in 1:length(tree_kids)) {
-      mtch_scrs[j] <- (sum(nd_kids %in% tree_kids[[j]])/length(nd_kids)) +
-        (sum(tree_kids[[j]] %in% nd_kids)/length(tree_kids[[j]]))
-    }
-    bst_mtch <- which.max(mtch_scrs)[1]
-    if(length(bst_mtch) > 0) {
-      node_obj[[i]][["nid"]] <- tree['nds'][bst_mtch]
-    }
   }
+  cat("    Done. Matched [", cc, "] nodes to tree.\n", sep="")
+  
+  # FIND PD, ED, PE AND AGE FOR EVERY NODE
+  cat("    Adding tree timings to node_obj ....\n")
+  cc <- 0
+  ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
+  mtxids <- names(map_obj)
+  for(txid in mtxids) {
+    nid <- map_obj[[txid]][['nid']]
+    sid <- getNdSstr(tree, id=nid)[1]
+    age <- getNdAge(tree, id=nid)
+    kids <- getNdKids(tree, nid)
+    ed <- mean(ed_vals[which(tps %in% kids)])
+    kids <- getNdKids(tree, sid)
+    sstr_ed <- mean(ed_vals[which(tps %in% kids)])
+    spn <- getNdSlt(tree, slt_nm="spn", id=nid)
+    sstr_spn <- getNdSlt(tree, slt_nm="spn", id=sid)
+    pd <- getNdSlt(tree, slt_nm="pd", id=nid)
+    sstr_pd <- getNdSlt(tree, slt_nm="pd", id=sid)
+    node_obj[[txid]][['ed']] <- ed
+    node_obj[[txid]][['cntrst_ed']] <- ed/sstr_ed
+    node_obj[[txid]][['pe']] <- spn
+    node_obj[[txid]][['cntrst_pe']] <- spn/sstr_spn
+    node_obj[[txid]][['pd']] <- pd
+    node_obj[[txid]][['cntrst_pd1']] <- pd/sstr_pd
+    node_obj[[txid]][['cntrst_pd2']] <- pd - sstr_pd
+    node_obj[[txid]][['age']] <- age
+    cc <- cc + 1
+    ttl_cc <- ttl_cc + 1
+  }
+  cat("    Done. Got timings for [", cc, "] nodes from tree.\n", sep="")
 }
+cat("Done. Got timings for [", ttl_cc, "] nodes from all trees.\n", sep="")
 
-# FIND PD, ED, SPAN AND AGE FOR EVERY NODE
-ed_vals <- calcFrPrp(tree, tids=tree['tips'])
-for(i in which(!ignore_bool)) {
-  nid <- node_obj[[i]][['nid']]
-  if(is.null(nid)) {
-    next
-  }
-  age <- getNdAge(tree, id=nid)
-  node_obj[[i]][['age']] <- age
-  if(age < 50) {
-    ignore_bool[i] <- TRUE
-    next
-  }
-  kids <- getNdKids(tree, nid)
-  ed <- mean(ed_vals[which(tree['tips'] %in% kids)])
-  node_obj[[i]][['ed']] <- ed
-  spn <- getNdSlt(tree, slt_nm="spn", id=nid)
-  node_obj[[i]][['spn']] <- spn
-  pd <- getNdSlt(tree, slt_nm="pd", id=nid)
-  node_obj[[i]][['pd']] <- pd
-}
+# OUTPUT
+cat('Saving ....\n')
+save(node_obj, cnddts, file=output_file)
+cat('Done.\n')
 
-# TOP-100
-spns <- unlist(lapply(node_obj, function(x) x[['spn']]))
-cns <- unlist(lapply(node_obj, function(x) suppressWarnings(min(x[['cntrst_n']]))))
-nms <- unlist(lapply(nms_obj, function(x) x[['scientific name']]))
-bool <- unlist(lapply(node_obj, function(x) !is.null(x[['spn']])))
-epis <- log(cns[bool]) * log(spns)
-ordrd <- order(epis)[1:100]
-for(i in ordrd) {
-  nm <- nms[i]
-  epi <- epis[i]
-  spcr <- paste0(rep(' ', 33 - nchar(nm)), collapse="")
-  cat(nm, spcr, signif(epi, 3), "\n")
-}
+# END
+cat(paste0('\nStage `phylotree` finished at [', Sys.time(), ']\n'))
