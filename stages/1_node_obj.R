@@ -31,7 +31,8 @@ for(i in 1:length(nodes_lines)) {
     txid <- gsub('\t', '', nodes_lines[[i]][1])
     prid <- gsub('\t', '', nodes_lines[[i]][2])
     rank <- gsub('\t', '', nodes_lines[[i]][3])
-    node_obj[[txid]] <- list("prid"=prid, "rank"=rank)
+    node_obj[[txid]] <- list("prid"=prid, "rank"=rank,
+                             'dcode'=division_code)
   }
 }
 cat("Done.\n")
