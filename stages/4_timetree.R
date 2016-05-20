@@ -23,10 +23,10 @@ output_file <- file.path('4_timetree', 'res.RData')
 load(input_file)
 
 # LOOK UP TIMETREE DIVERGENCES
-cat('Searching Time Tree for pendant edges ....\n')
+cat('Searching Time Tree ....\n')
 cc <- 0
 for(txid in cnddts) {
-  if('pe' %in% names(node_obj[[txid]])) {
+  if('tmsplt' %in% names(node_obj[[txid]])) {
     cc <- cc + 1
     next
   }
