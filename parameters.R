@@ -29,5 +29,8 @@ contrst_n_min <- 100
 ignore_pttrns <- c("unclassified",  # unclassified biological entities
                    "unassigned",  # unassigned biological entities
                    "\\sx\\s",  # species crosses
-                   "toxodon",  # extinct mammal
-                   "macrauchenia")  # extinct mammal
+                   "incertae sedis",  # uncertain taxonomic group
+                   "toxodon",  # extinct
+                   "macrauchenia",  # extinct
+                   "brachylophosaurus",  # extinct
+                   "tyrannosaurus")  # extinct
