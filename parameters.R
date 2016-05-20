@@ -1,36 +1,46 @@
 # SET PARAMETERS
-parallel <- TRUE
+
+# PARALLEL SETTINGS
+parallel <- TRUE  # Won't work for Windows
 if(parallel) {
   library(doMC)
   ncps <- detectCores()
   registerDoMC(cores=ncps)
 }
-ncps <- 2
-stdy_grp <- 'plants'
 
-# NCBI TAXONOMY
-# Division Dump Info:
-# 0	|	BCT	|	Bacteria	|		|
-# 1	|	INV	|	Invertebrates	|		|
-# 2	|	MAM	|	Mammals	|		|
-# 3	|	PHG	|	Phages	|		|
-# 4	|	PLN	|	Plants and Fungi	|		|
-# 5	|	PRI	|	Primates	|		|
-# 6	|	ROD	|	Rodents	|		|
-# 7	|	SYN	|	Synthetic and Chimeric	|		|
-# 8	|	UNA	|	Unassigned	|	No species nodes should inherit this division assignment	|
-# 9	|	VRL	|	Viruses	|		|
-# 10	|	VRT	|	Vertebrates	|		|
-# 11	|	ENV	|	Environmental samples	|	Anonymous sequences cloned directly from the environment	|
+# DIVISION SELECTION
+# division.dmp (downloaded: 16/05/2016)
+# 0	 |	BCT	|	Bacteria
+# 1	 |	INV	|	Invertebrates
+# 2	 |	MAM	|	Mammals
+# 3	 |	PHG	|	Phages
+# 4	 |	PLN	|	Plants and Fungi
+# 5	 |	PRI	|	Primates
+# 6	 |	ROD	|	Rodents
+# 7	 |	SYN	|	Synthetic and Chimeric
+# 8	 |	UNA	|	Unassigned
+# 9	 |	VRL	|	Viruses
+# 10 |	VRT	|	Vertebrates
+# 11 |	ENV	|	Environmental samples
 division_codes <- c(1, 2, 4, 5, 6, 10)
-contrst_n_min <- 100
 
-# Ignore taxa name patterns
-ignore_pttrns <- c("unclassified",  # unclassified biological entities
-                   "unassigned",  # unassigned biological entities
-                   "\\sx\\s",  # species crosses
-                   "incertae sedis",  # uncertain taxonomic group
-                   "toxodon",  # extinct
-                   "macrauchenia",  # extinct
+# IGNORE PATTERNS
+# Ignore nodes that are not true "natural" biological entities
+# Ignore extinct taxa
+ignore_pttrns <- c("unclassified",       # unclassified biological entities
+                   "unassigned",         # unassigned biological entities
+                   "\\sx\\s",            # species crosses
+                   "incertae sedis",     # uncertain taxonomic group
+                   "toxodon",            # extinct
+                   "macrauchenia",       # extinct
                    "brachylophosaurus",  # extinct
-                   "tyrannosaurus")  # extinct
+                   "tyrannosaurus")      # extinct
+
+
+# LIVING FOSSIL SETTINGS
+# These determine what node is chosen as a living fossil candidate (`cnddts`).
+# Not doing this will run the pipeline on all nodes, 100s to 1,000,0000s.
+max_cntrst_n <- 0.01  # maximum contrasted N for a living fossil
+min_prnt_n <- 1000    # minimum number of descendant species in direct parent
+max_nsstrs <- 100     # maximum number of sisters, if node is polytomous
+min_age <- 50         # minimum age of a node in MY

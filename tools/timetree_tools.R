@@ -6,7 +6,7 @@ getTTOL <- function(sp1, sp2) {
     stop <- regexpr(" Mya", strng) - 1
     as.numeric(substr(strng, start=26, stop=stop))
   }
-  fl <- file.path('timetree_cache', paste0(sp1, "_", sp2, ".RData"))
+  fl <- file.path(cache_dir, paste0(sp1, "_", sp2, ".RData"))
   if(file.exists(fl)) {
     load(fl)
   } else {

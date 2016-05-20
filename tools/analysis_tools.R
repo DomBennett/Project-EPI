@@ -4,7 +4,31 @@ library(RJSONIO)
 library(wordcloud)
 library(tm)
 
-getIUCNNrrtv <- function(nm, token, cache_dir="iucn_data") {
+# FOLDERS
+cache_dir <- "caches"
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
+}
+cache_dir <- file.path("caches", "iucn")
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
+}
+
+# FUNCTIONS
+getToken <- function() {
+  if(file.exists("iucn_token.R")) {
+    source("icun_token.R")
+  } else {
+    msg <- "No token found!
+Apply for one here: http://apiv3.iucnredlist.org/api/v3/token
+Save the token in an R script called `iucn_token.R` in the working dir:
+    `token <- [USER TOKEN]`\n"
+    stop(msg)
+  }
+  token
+}
+
+getIUCNNrrtv <- function(nm, token) {
   # Get narrative data for species from IUCN API
   # first check if not already downloaded
   fl <- file.path(cache_dir, paste0(gsub(" ", "_", nm), '.RData'))

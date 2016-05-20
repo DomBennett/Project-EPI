@@ -17,7 +17,7 @@ test*
 # Data
 *.RData
 *.csv
-raw
+0_data/
 *.xlsx
 *.tre
 *.pdf

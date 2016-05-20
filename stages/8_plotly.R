@@ -55,4 +55,5 @@ for(i in 1:length(cnddts)) {
 rnkngs <- rnkngs[!is.na(rnkngs[['Time']]), ]
 p <- ggplot(data=rnkngs, aes(x=Time, y=Success, colour=Change)) +
   stat_smooth(method="lm", se=FALSE, colour="red") + geom_point(aes(Sci=Sci, Common=Common))
-ggplotly(p, tooltip=c("Sci", "Common"))
+p <- ggplotly(p, tooltip=c("Sci", "Common"))
+plotly_POST(p, sharing = "secret")

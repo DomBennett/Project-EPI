@@ -3,7 +3,7 @@
 ## 25/02/2014
 
 ## Directories
-input.dir <- "2_metrics"
+input.dir <- file.path('other', 'old')
 
 require(ggplot2)
 require(maps)
@@ -39,7 +39,6 @@ model.data <- data[!is.na(data$X22.1_HomeRange_km2), ]
 rownames(model.data) <- model.data$tree_binomials
 to.drop <- tree$tip.label[!tree$tip.label %in% model.data$tree_binomials]
 model.tree <- drop.tip(tree, to.drop)
-hist(model.data$X22.1_HomeRange_km2)
 model.data$home.range.logged <- log(model.data$X22.1_HomeRange_km2)
 hist(model.data$home.range.logged)
 model <- gls(home.range.logged ~ lfi, data=model.data, method="ML",
@@ -47,18 +46,31 @@ model <- gls(home.range.logged ~ lfi, data=model.data, method="ML",
 summary(model)
 plot(model)
 
+phyloGLS <- function(data, cname) {
+  model.data <- data[!is.na(data[[cname]]), ]
+  rownames(model.data) <- model.data$tree_binomials
+  to.drop <- tree$tip.label[!tree$tip.label %in% model.data$tree_binomials]
+  model.tree <- drop.tip(tree, to.drop)
+  model.data[[cname]] <- log(model.data[[cname]])
+  hist(model.data[[cname]])
+  frml <- as.formula(paste0(cname, " ~ lfi"))
+  model <- gls(frml, data=model.data, method="ML",
+               correlation=corPagel(value=1, phy=model.tree, fixed=TRUE))
+  model
+}
+
 
 for(i in 1:ncol(data)) {
   if(is(data[ ,i], 'vector')) {
     #plot(data[ ,i], data$lfi, main=colnames(data)[i])
     #plot(log(data[ ,i]), data$lfi, main=paste0(colnames(data)[i], 'logged'))
-    res <- cor.test(data[,i], lfi)
+    res <- phyloGLS(data, colnames(data)[i])
     if(res['p.value'][[1]] < 0.05) {
       cat('-------------------------\n')
       cat(colnames(data)[i], ':\ncor =', res$estimate[[1]],
           '\np.value =', res['p.value'][[1]],'\n', sep=" ")
     } else {
-      res <- cor.test(log(data[,i]), lfi)
+      res <- phyloGLS(data, colnames(data)[i])
       if(!is.na(res['p.value'][[1]]) && res['p.value'][[1]] < 0.05) {
         cat('-------------------------\n')
         cat(colnames(data)[i], '(logged):\ncor =', res$estimate[[1]],

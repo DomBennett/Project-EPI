@@ -2,7 +2,6 @@
 
 # TODO:
 # -- use division codes to minimise looping and calculate for more than just cnddts
-# -- run across tree distributions
 
 # START
 cat(paste0('\nStage `phylotime` started at [', Sys.time(), ']\n'))
@@ -18,13 +17,13 @@ source(file.path('tools', 'phylotime_tools.R'))
 if(!file.exists('3_phylotime')) {
   dir.create('3_phylotime')
 }
-phylo_dir <- file.path("0_data", "published_trees")
+tree_dir <- file.path("0_data", "trees")
 input_file <- file.path("2_cntrst_n", "res.RData")
 output_file <- file.path('3_phylotime', 'res.RData')
 
 # INPUT
 load(input_file)
-tree_files <- list.files(phylo_dir)
+tree_files <- list.files(tree_dir)
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")
@@ -32,7 +31,7 @@ ttl_cc <- 0
 for(tree_file in tree_files) {
   # INPUT
   cat('    Reading in [', tree_file, '] ....\n', sep="")
-  tree <- readTree(file.path(phylo_dir, tree_file))
+  tree <- readTree(file.path(tree_dir, tree_file))
   map_obj <- list()
   cat("    Done.\n")
   
@@ -96,7 +95,7 @@ for(tree_file in tree_files) {
   mtxids <- names(map_obj)
   for(txid in mtxids) {
     nid <- map_obj[[txid]][['nid']]
-    if(nid == "n1") {
+    if(nid == "n1") {  # this is the root
       next
     }
     sid <- getNdSstr(tree, id=nid)[1]

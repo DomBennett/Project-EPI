@@ -10,8 +10,13 @@ source('parameters.R')
 source(file.path('tools', 'timetree_tools.R'))
 
 # DIRS
-if(!file.exists("timetree_cache")) {
-  dir.create("timetree_cache")
+cache_dir <- "caches"
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
+}
+cache_dir <- file.path("caches", "timetree")
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
 }
 if(!file.exists('4_timetree')) {
   dir.create('4_timetree')

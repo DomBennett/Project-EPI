@@ -1,7 +1,7 @@
 # PARSE NODE OBJ AND CALCULATE CONTRST N
 
 # START
-cat(paste0('\nStage `cntrst n` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `cntrst_n` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 source('parameters.R')
@@ -145,8 +145,9 @@ for(i in 1:length(txids)) {
   if(prid %in% txids) {
     prnt_n <- length(node_obj[[prid]][['kids']])
   }
-  bool <- (!is.null(cn) && cn < 0.01) & (prnt_n > 1000 | !prid %in% txids) &
-    (length(sstrs) > 100)
+  bool <- (!is.null(cn) && cn < max_cntrst_n) &
+    (prnt_n > min_prnt_n | !prid %in% txids) &
+    (length(sstrs) > max_nsstrs)
   if(bool) {
     cnddts[i] <- TRUE
   }
@@ -178,4 +179,4 @@ for(i in ordrd) {
 }
 
 # END
-cat(paste0('\nStage `cntrst n` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `cntrst_n` finished at [', Sys.time(), ']\n'))

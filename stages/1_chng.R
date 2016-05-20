@@ -1,7 +1,7 @@
-# Generates an augmented phylo object with change, time and success values appended
+# ESTIMATE CHANGE PER NODE
 
 # START
-cat(paste0('\nStage `measurables` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `chng` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 cat("Loading parameters ...\n")
@@ -13,11 +13,11 @@ library(ape)
 library(plyr)
 library (foreach)
 library (doMC)
-source(file.path("tools", "measurables_tools.R"))
+source(file.path("tools", "change_tools.R"))
 
 # DIRS
 input.dir <- "0_data"
-output.dir <- "1_measurables"
+output.dir <- "5_change"
 if(!file.exists(output.dir)) {
   dir.create(output.dir)
 }
@@ -71,4 +71,4 @@ cat("Outputting ...\n")
 save(phylos, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
 
 # END
-cat(paste0('\nStage `mesurables` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `change` finished at [', Sys.time(), ']\n'))

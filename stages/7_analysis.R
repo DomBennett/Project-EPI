@@ -2,44 +2,39 @@
 # from non-living fossils using text analysis of IUCN red list
 
 # START
-cat(paste0('\nStage `text` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `analysis` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 cutoff <- -1  # highest EPI for a living fossil
 source('parameters.R')
 
-# LIBS
-source(file.path('tools', 'text_tools.R'))
+# FUNCTIONS
+source(file.path('tools', 'analysis_tools.R'))
 
 # DIRS
-output_dir <- 'text'
-cache_dir <- 'iucn_data'
+output_dir <- '8_analysis'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-if (!file.exists(cache_dir)) {
-  dir.create(cache_dir)
-}
+input_file <- file.path("6_epi", "res.RData")
 
-# GET IUCN TOKEN
-source('token.R')
-
-# LOAD EPI DATA
-load(file=file.path('2_epi', paste0(stdy_grp, '.RData')))
-metrics <- metrics[!is.na(metrics[['epi_nc']]), ]
-# remove _
-metrics[['node.label']] <- gsub("_", " ", metrics[['node.label']])
-
-# PARITION
-lfs <- metrics[metrics[['epi_nc']] < cutoff, ]
-lfs[order(lfs$epi_nc),]
+# INPUT
+load(input_file)
 
 # SEARCH IUCN
+token <- getToken()
 lfs_nrrtvs <- list()
+nds <- NULL
 for(i in 1:nrow(lfs)) {
-  nm <- lfs[i, 'node.label']
-  cat('Searching [', nm, '] ....\n')
-  lfs_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
+  nd <- lfs[i, 'node']
+  nms <- children[[nd]]
+  i
+  lfs[i,]
+  for(nm in nms) {
+    cat('Searching [', nm, '] ....\n')
+    lfs_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
+    nds <- c(nds, nd)
+  }
 }
 
 # GET HABITAT AND ECOLOGY DISTS
@@ -124,7 +119,5 @@ for(i in 1:length(lfs_hes)) {
   }
 }
 
-
-
 # END
-cat(paste0('\nStage `text` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `analysis` finished at [', Sys.time(), ']\n'))

@@ -1,4 +1,14 @@
-# House-code for reading non-standard nexus data
+matchPhyChar <- function (phylo, chars) {
+  chars <- chars[rownames (chars) %in% phylo$tip.label, ]
+  if (!all (phylo$tip.label %in% rownames (chars))) {
+    phylo <- calcScope (rownames (chars), phylo)
+  }
+  if (!all (c (phylo$tip.label %in% rownames (chars),
+               rownames (chars) %in% phylo$tip.label))) {
+    stop ("All labels do not match between data and phylogeny.")
+  }
+  return (list (phylo = phylo, chars = chars))
+}
 
 readNexusData <- function(file) {
   # internal functions
@@ -98,7 +108,7 @@ readNexusData <- function(file) {
           # test if right number of chars
           if (length(characters) != nchars) {
             error.message <- "Number of characters in matrix does not match number
-          specified in metadata."
+            specified in metadata."
             stop(paste0("Error! [", tax.labels[i],"] ", error.message))
           }
           # make sure all characters are valid
@@ -120,7 +130,7 @@ readNexusData <- function(file) {
           # add characters to res
           res[i, ] <- characters
         }
-      }
+        }
       if (!tax.label.found) {
         # if matrix loop finishes without breaking, tax label is not in matrix
         stop (paste0("Error! Tax label not found in matrix: [", tax.labels[i], "]"))
@@ -151,6 +161,3 @@ readNexusData <- function(file) {
                        gap = g.symbol, missing = m.symbol)
   return (matrix)
 }
-
-#matrix  <- readNexusData ("0_data/test_nexus.nex")
-#matrix <- readNexusData ("0_data/mbank_X1766_1-8-2014_922_no_notes.nex")

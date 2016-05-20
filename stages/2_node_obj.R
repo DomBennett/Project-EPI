@@ -2,7 +2,7 @@
 # ftp://ftp.ncbi.nih.gov/pub/taxonomy/ (downloaded: 16/05/2016)
 
 # START
-cat(paste0('\nStage `node obj` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `node_obj` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 source('parameters.R')
@@ -12,7 +12,7 @@ if(!file.exists("1_node_obj")) {
   dir.create("1_node_obj")
 }
 output_file <- file.path("1_node_obj", "res.RData")
-input_dir <- file.path('0_data', 'raw')
+input_dir <- file.path('0_data', 'ncbi_taxonomy')
 
 # INPUT
 cat("Reading in nodes and names dump ....\n")
@@ -58,4 +58,4 @@ save(node_obj, file=output_file)
 cat('Done.\n')
 
 # END
-cat(paste0('\nStage `node obj` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `node_obj` finished at [', Sys.time(), ']\n'))
