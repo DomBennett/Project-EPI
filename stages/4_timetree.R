@@ -30,45 +30,13 @@ for(txid in cnddts) {
     cc <- cc + 1
     next
   }
-  print(node_obj[[txid]][['nm']][['scientific name']])
   # get time since split
   tmsplt <- getTmsplt(txid)
   if(is.na(tmsplt['mean_ttol'])) {
     next
   }
-  # get ages
-  if(node_obj[[txid]][['rank']] == 'species') {
-    age <- 0
-  } else {
-    age <- getAge(txid)
-  }
-  if(is.na(age['mean_ttol']) || age['mean_ttol'] > tmsplt['mean_ttol']) {
-    next
-  }
-  sstrs <- node_obj[[txid]][['sstr']]
-  if(length(sstrs) > 1) {
-    next
-  }
-  sstr_age <- NA
-  for(sstr in sstrs) {
-    tmp <- getAge(sstr)
-    # always go for the greatest time
-    bool <- is.na(sstr_age) || sstr_age[['mean_ttol']] > tmp[['mean_ttol']]
-    if(bool) {
-      sstr_age <- tmp
-    }
-  }
-  if(is.na(sstr_age[['mean_ttol']])) {
-    next
-  }
-  # get PEs
-  pe <- tmsplt[['mean_ttol']] - age[['mean_ttol']]
-  sstr_pe <- tmsplt[['mean_ttol']] - sstr_age[['mean_ttol']]
-  cntrst_pe <- (pe + 1)/(sstr_pe + 1)
   # assign
-  node_obj[[txid]][['age']] <- age
-  node_obj[[txid]][['pe']] <- pe
-  node_obj[[txid]][['cntrst_pe']] <- cntrst_pe
+  node_obj[[txid]][['tmsplt']] <- tmsplt[['mean_ttol']]
   cc <- cc + 1
 }
 cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")

@@ -117,6 +117,7 @@ for(tree_file in tree_files) {
     node_obj[[txid]][['cntrst_pd1']] <- pd/sstr_pd
     node_obj[[txid]][['cntrst_pd2']] <- pd - sstr_pd
     node_obj[[txid]][['age']] <- age
+    node_obj[[txid]][['tmsplt']] <- spn + age
     cc <- cc + 1
     ttl_cc <- ttl_cc + 1
   }

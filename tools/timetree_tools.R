@@ -71,24 +71,3 @@ getTmsplt <- function(txid) {
   }
   tmsplt
 }
-
-getAge <- function(txid) {
-  # Return age based on divergence of ptids
-  ptids <- node_obj[[txid]][['ptid']]
-  cmbs <- combn(ptids, 2)
-  age <- getDivergence(cmbs[1,1], cmbs[2,1])
-  if(ncol(cmbs) > 1) {
-    if(ncol(cmbs) > 10) {
-      cmbs <- cmbs[ ,sample(2:ncol(cmbs), 10)]
-    }
-    for(j in 2:ncol(cmbs)) {
-      tmp <- getDivergence(cmbs[1,j], cmbs[2,j])
-      # always seek greatest time
-      bool <- age[['mean_ttol']] > tmp[['mean_ttol']]
-      if(!is.na(bool) && bool) {
-        age <- tmp
-      }
-    }
-  }
-  age
-}
