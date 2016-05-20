@@ -22,7 +22,7 @@ stdy_grp <- 'plants'
 # 9	|	VRL	|	Viruses	|		|
 # 10	|	VRT	|	Vertebrates	|		|
 # 11	|	ENV	|	Environmental samples	|	Anonymous sequences cloned directly from the environment	|
-division_codes <- c(2, 5, 6, 10)
+division_codes <- c(1, 2, 4, 5, 6, 10)
 contrst_n_min <- 100
 
 # Ignore taxa name patterns
