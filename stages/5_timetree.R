@@ -18,8 +18,8 @@ cache_dir <- file.path("caches", "timetree")
 if(!file.exists(cache_dir)) {
   dir.create(cache_dir)
 }
-if(!file.exists('4_timetree')) {
-  dir.create('4_timetree')
+if(!file.exists('5_timetree')) {
+  dir.create('5_timetree')
 }
 input_file <- file.path("3_phylotime", "res.RData")
 output_file <- file.path('4_timetree', 'res.RData')

@@ -14,12 +14,12 @@ library(treeman)
 source(file.path('tools', 'phylotime_tools.R'))
 
 # DIRS
-if(!file.exists('3_phylotime')) {
-  dir.create('3_phylotime')
+if(!file.exists('4_phylotime')) {
+  dir.create('4_phylotime')
 }
 tree_dir <- file.path("0_data", "trees")
-input_file <- file.path("2_cntrst_n", "res.RData")
-output_file <- file.path('3_phylotime', 'res.RData')
+input_file <- file.path("3_cntrst_n", "res.RData")
+output_file <- file.path('4_phylotime', 'res.RData')
 
 # INPUT
 load(input_file)
