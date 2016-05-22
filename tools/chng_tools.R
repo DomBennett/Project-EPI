@@ -1,4 +1,18 @@
-# In-house functions for running pipeline
+
+calcMeanCladeChange <- function(tree, clades_phylo, echanges) {
+  # Add mean changes per clade to clades_phylo
+  clades_phylo[['chng']] <- vector(length=length(clades_phylo[['clade.node']]))
+  rtnd <- length(tree$tip.label) + 1
+  for(i in 1:length(clades_phylo[['clade.node']])) {
+    nd <- clades_phylo[['clade.node']][[i]]
+    edgs <- MoreTreeTools::getEdges(tree, node=nd)
+    if(nd != rtnd) {
+      edgs <- c(edgs, which(tree$edge[ ,2] == nd))
+    }
+    clades_phylo[['chng']][i] <- mean(echanges[edgs], na.rm=TRUE)
+  }
+  clades_phylo
+}
 
 rmvMssg <- function(dt, prp=0.5) {
   # Remove missing values from a matrix iteratively
@@ -55,34 +69,6 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
     new_chars[pull, i] <- as.numeric(cut(crds[ ,i], n))
   }
   new_chars
-}
-
-calcSuccess <- function(phylo) {
-  nodes <- 1:(length(phylo$tip.label) + phylo$Nnode)
-  res <- mlply(.data = data.frame(node = nodes),
-                .fun = MoreTreeTools::getChildren,
-                .progress = create_progress_bar(name = "time"),
-               tree=phylo)
-  phylo$desc <- res
-  phylo
-}
-
-calcTime <- function(phylo) {
-  # Current: see calcED() in MoreTreeTools
-  countDescendants <- function(node) {
-    length(MoreTreeTools::getChildren(phylo, node))
-  }
-  calcSpecies <- function(sp) {
-    edges <- MoreTreeTools::getEdges(phylo, tips=as.character(sp), type=2)
-    n.descs = mdply(.data = data.frame(node = phylo$edge[edges, 2]),
-                     .fun = countDescendants)[ ,2]
-    ed <- sum(phylo$edge.length[edges]/n.descs)
-    ed
-  }
-  res <- mdply(.data = data.frame(sp = phylo$tip.label),
-                .fun = calcSpecies, .progress = create_progress_bar(name = "time"))
-  phylo$eds <- res
-  phylo
 }
 
 matchClades <- function(q.clade.node, s.clade.node) {
@@ -192,9 +178,7 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   edge.changes <- ddply(.data = res, .variables = .(f.node), .fun = summarize,
                         mean.change = mean(change), n = length(change),
                         .parallel=parallel)
-  mean.changes <- edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
-  f.phylo$edge.changes <- mean.changes
-  f.phylo
+  edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
 }
 
 parsimonyReconstruction <- function(chars, phylo, order.numeric = TRUE,

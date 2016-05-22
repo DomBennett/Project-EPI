@@ -10,65 +10,53 @@ source('parameters.R')
 # LIBS
 cat("Loading functions ...\n")
 library(ape)
-library(plyr)
-library (foreach)
-library (doMC)
-source(file.path("tools", "change_tools.R"))
+source(file.path("tools", "chng_tools.R"))
 
 # DIRS
-input.dir <- "0_data"
-output.dir <- "5_change"
-if(!file.exists(output.dir)) {
-  dir.create(output.dir)
+input_dir <- file.path('0_data', "chars")
+output_dir <- "1_change"
+if(!file.exists(output_dir)) {
+  dir.create(output_dir)
 }
 
 # INPUT
-cat("Importing data ...\n")
-load(file.path(input.dir, paste0(stdy_grp, '.RData')))
-phylos <- data[["phylos"]]
-chars <- data[["chars"]]
-rm(data)
-# # test with mangeable size
-# phylo <- drop.tip(phylo, sample(phylo$tip.label, length(phylo$tip.label) - 1000))
-# chars <- chars[phylo$tip.label, sample(1:length(chars), size=100)]
+phychr_files <- list.files(input_dir, pattern=".RData")
 
-# PROCESS
-if(is.null(chars)) {
-  phylos[[1]]$edge.changes <- NA
-  cat("Calculating fair proportion ...\n")
-  phylos[[1]] <- calcTime(phylos[[1]])
-  cat("Calculating N descendants ...\n")
-  phylos[[1]] <- calcSuccess(phylos[[1]])
-} else {
-  cat("Reducing character matrix ...\n")
+# LOOP THROUGH TREE FILES
+cat("Looping through all published trees and character sets ....\n")
+ttl_cc <- 0
+for(phychr_file in phychr_files) {
+  cat('    Reading in [', phychr_file, '] ....\n', sep="")
+  load(file.path(input_dir, phychr_file))
+  tree <- data[["tree"]]
+  chars <- data[["chars"]]
+  clades_phylo <- data[['clades_phylo']]
+  rm(data)
+  cat("    Done.\n")
+  
+  cat("    Reducing character matrix ....\n")
   chars <- reduceChrctrMtrx(chars, pcut=1)
-  if(length(phylos) > 1) {
-    phylos <- foreach(p=phylos) %dopar% {
-      cat("Estimating ancestral node states ...\n")
-      reconstruction.obj <- parsimonyReconstruction(chars, p)
-      cat("Calculating edge changes ...\n")
-      p <- calcChange(p, reconstruction.obj)
-      cat("Calculating fair proportion ...\n")
-      p <- calcTime(p)
-      cat("Calculating N descendants ...\n")
-      p <- calcSuccess(p)
-      p
-    }
-  } else {
-    cat("Estimating ancestral node states ...\n")
-    reconstruction.obj <- parsimonyReconstruction(chars, phylos[[1]])
-    cat("Calculating edge changes ...\n")
-    phylos[[1]] <- calcChange(phylos[[1]], reconstruction.obj, parallel=TRUE)
-    cat("Calculating fair proportion ...\n")
-    phylos[[1]] <- calcTime(phylos[[1]])
-    cat("Calculating N descendants ...\n")
-    phylos[[1]] <- calcSuccess(phylos[[1]])
-  }
+  prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
+  cat('    Done. Found [', ncol(chars), '] characters each on average representing [', 
+      prep, '%] of all tips\n', sep="")
+  
+  cat("    Estimating ancestral node states with parsimony ....\n")
+  reconstruction_obj <- parsimonyReconstruction(chars, tree)
+  cat('    Done\n')
+  
+  cat("    Calculating edge changes ....\n")
+  echanges <- calcChange(tree, reconstruction_obj)
+  cat('Done\n')
+  
+  cat("    Calculate mean change per clade ....\n")
+  clades_phylo <- calcMeanCladeChange(tree, clades_phylo, echanges)
+  nds_wchrs <- sum(clades_phylo[['chng']] > 0, na.rm=TRUE)
+  cat("Done. [", nds_wchrs, "] nodes with mean change.\n", sep="")
+  
+  cat("    Outputting ...\n")
+  save(clades_phylo, file=file.path(output_dir, phychr_file))
+  cat("    Done.\n")
 }
 
-# OUTPUT
-cat("Outputting ...\n")
-save(phylos, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
-
 # END
-cat(paste0('\nStage `change` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `chng` finished at [', Sys.time(), ']\n'))
