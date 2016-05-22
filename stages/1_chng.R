@@ -45,7 +45,7 @@ for(phychr_file in phychr_files) {
   cat('    Done\n')
   
   cat("    Calculating edge changes ....\n")
-  echanges <- calcChange(tree, reconstruction_obj)
+  echanges <- calcChange(tree, reconstruction_obj, parallel=TRUE)
   cat('Done\n')
   
   cat("    Calculate mean change per clade ....\n")

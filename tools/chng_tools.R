@@ -172,7 +172,6 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   f.clades <- f.clade.node[[1]]
   f.nodes <- f.clade.node[[2]]
   res <- ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
-               .progress = create_progress_bar(name = "time"),
                .parallel=parallel)
   # Calculate mean change for each edge across all chars
   edge.changes <- ddply(.data = res, .variables = .(f.node), .fun = summarize,
