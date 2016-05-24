@@ -43,6 +43,7 @@ file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path(chars_dir, file))
 trees <- read.tree(file.path(tree_dir, 'jetz_aves.tre'))
 tree <- consensus(trees)  # strict consensus tree
+tree$edge.length <- rep(1, nrow(tree$edge))
 clades_phylo <- MoreTreeTools::getClades(tree)
 # character data is for whole groups
 # use character matching to assign the same value to memebers of the same group
