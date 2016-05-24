@@ -88,7 +88,7 @@ matchClades <- function(q.clade.node, s.clade.node) {
     compClades <- function(s.clade) {
       sum(q.clade %in% s.clade) / length(q.clade)
     }
-    match.scores <- ldply(.data = s.clades, .fun = compClades)[ ,1]
+    match.scores <- plyr::ldply(.data = s.clades, .fun = compClades)[ ,1]
     match.bool <- match.scores == max(match.scores) & match.scores > 0
     res <- s.nodes[match.bool]
     s.clades <<- s.clades[!match.bool]
@@ -99,7 +99,7 @@ matchClades <- function(q.clade.node, s.clade.node) {
       res
     }
   }, env = s.clade.env)
-  res <- llply(.data = q.clade.node[[1]], .fun = matchQCladeInSClades)
+  res <- plyr::llply(.data = q.clade.node[[1]], .fun = matchQCladeInSClades)
   res
 }
 
@@ -142,7 +142,7 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
       }
       data.frame(f.node, r.node, change)
     }
-    res <- mdply(.data = data.frame(i = 1:nrow(r.res)), .fun = eachRNode)
+    res <- plyr::mdply(.data = data.frame(i = 1:nrow(r.res)), .fun = eachRNode)
     res
   }
   calcEachRPhylo <- function(part.reconstruction.obj) {
@@ -162,7 +162,7 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
     r.phylo <- part.reconstruction.obj[['reduced.tree']]
     r.clade.node <- MoreTreeTools::getClades(r.phylo)
     r.nodes <- r.clade.node[[2]]
-    r.res <- mdply(data.frame(r.node = r.nodes), calcEachRPhyloEdge)
+    r.res <- plyr::mdply(data.frame(r.node = r.nodes), calcEachRPhyloEdge)
     names(r.res)[2] <- "change"
     matching.f.nodes <- matchClades(r.clade.node, f.clade.node)
     res <- mapOnFPhylo(r.res, matching.f.nodes, weight.by.edge = TRUE)
@@ -171,10 +171,10 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   f.clade.node <- MoreTreeTools::getClades(f.phylo)
   f.clades <- f.clade.node[[1]]
   f.nodes <- f.clade.node[[2]]
-  res <- ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
+  res <- plyr::ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
                .parallel=parallel)
   # Calculate mean change for each edge across all chars
-  edge.changes <- ddply(.data = res, .variables = .(f.node), .fun = summarize,
+  edge.changes <- plyr::ddply(.data = res, .variables = .(f.node), .fun = summarize,
                         mean.change = mean(change), n = length(change),
                         .parallel=parallel)
   edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
