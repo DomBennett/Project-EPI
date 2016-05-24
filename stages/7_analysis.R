@@ -1,45 +1,58 @@
-# Test whether living fossils habitat and ecology is significantly different
-# from non-living fossils using text analysis of IUCN red list
+# TEST IF LIVING FOSSILS SHARE MORE
 
 # START
 cat(paste0('\nStage `analysis` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
-cutoff <- -1  # highest EPI for a living fossil
 source('parameters.R')
+token <- getToken()
 
 # FUNCTIONS
 source(file.path('tools', 'analysis_tools.R'))
 
 # DIRS
-output_dir <- '8_analysis'
+output_dir <- '7_analysis'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
 input_file <- file.path("6_epi", "res.RData")
+output_file <- file.path("7_analysis", "res.RData")
 
 # INPUT
 load(input_file)
 
+# GET LIVING FOSSILS
+lf_txids <- epi[['txid']][epi[['nt_indx_lg']] < -10]
+lf_data <- vector("list", length=length(lf_txids))
+names(lf_data) <- lf_txids
+
 # SEARCH IUCN
-token <- getToken()
-lfs_nrrtvs <- list()
-nds <- NULL
-for(i in 1:nrow(lfs)) {
-  nd <- lfs[i, 'node']
-  nms <- children[[nd]]
-  i
-  lfs[i,]
-  for(nm in nms) {
-    cat('Searching [', nm, '] ....\n')
-    lfs_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
-    nds <- c(nds, nd)
+for(i in 1:length(lf_data)) {
+  txid <- names(lf_data)[i]
+  nms <- getKidNms(txid)
+  lf_data[[txid]][['hbtts']] <- vector(length=length(nms))
+  for(j in 1:length(nms)) {
+    cat('Searching [', nms[j], '] ....\n', sep="")
+    nrrtv <- getIUCNNrrtv(nms[j], token)
+    if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
+       !is.null(nrrtv[['result']][[1]][['habitat']])) {
+      lf_data[[txid]][['hbtts']][j] <- nrrtv[['result']][[1]][['habitat']]
+    }
   }
 }
 
-# GET HABITAT AND ECOLOGY DISTS
-lfs_hes <- getHbttEclgy(lfs_nrrtvs)
-obs <- calcStrDst(lfs_hes, mthd='cosine')
+# GET STRING DISTANCES
+itrntns <- 100
+lf_dst <- matrix(nrow=itrntns, ncol=4)
+for(i in 1:itrntns) {
+  txts <- vector(length=length(lf_data))
+  for(j in 1:length(lf_data)) {
+    n <- length(lf_data[[j]][[1]])
+    txts[j] <- lf_data[[j]][[1]][[sample(1:n, 1)]]
+  }
+  res <- calcStrDst(txts, mthd='cosine')
+  lf_dst[i, ] <- as.numeric(res)
+}
 
 # ITERATE
 itrtns <- 999

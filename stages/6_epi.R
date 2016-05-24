@@ -1,5 +1,4 @@
-
-#TODO: Generate a random distribution of phylogenies to account for polytomies
+# CALCULATE EPIS FROM NODE_OBJ
 
 # START
 cat(paste0('\nStage `epi` started at [', Sys.time(), ']\n'))
@@ -10,45 +9,47 @@ source('parameters.R')
 
 # LIBS
 cat("Loading libraries ...\n")
-library(ape)
-library(plyr)
 source(file.path("tools", "epi_tools.R"))
 
 # DIRS
-input.dir <- "1_measurables"
-output.dir <- "2_epi"
-if(!file.exists(output.dir)) {
-  dir.create(output.dir)
+output_dir <- '6_epi'
+if (!file.exists(output_dir)) {
+  dir.create(output_dir)
 }
+input_file <- file.path("5_timetree", "res.RData")
+output_file <- file.path("6_epi", "res.RData")
 
 # INPUT
-cat("Importing data ...\n")
-load(file.path(input.dir, paste0(stdy_grp, '.RData')))
+load(input_file)
 
-# PROCESS
-cat("Calculating EPI ...\n")
-metrics <- calcMetricsPhylo(phylos[[1]])
-time <- metrics$contrast.ed1
-success <- metrics$contrast.n
-success <- log(metrics$contrast.n)
-change <- metrics$contrast.change
-metrics$success <- success
-metrics$time <- time
-metrics$change <- change
-metrics$epi <- ((change + success)/2) - time
-metrics$epi_nc <- (success - time)
-bool <- metrics$time.split < 50  # ignore less than 50MY
-metrics$epi_nc[bool] <- NA
-metrics$epi[bool] <- NA
-pdf(file.path('figures', paste0(stdy_grp, '_epicheck.pdf')))
-EPIChecker(metrics, 0.05)
-dev.off()
-#metrics$clade_label[order(metrics$epi_nc)[1:50]]
-#metrics$clade_label[order(metrics$epi)[1:25]]
+# GENERATE EPI DATAFRAME
+nms <- tmsplts <- cntrst_ns <- rep(NA, length(txids))
+for(i in 1:length(txids)) {
+  tmsplt <- node_obj[[txids[i]]][["tmsplt"]]
+  cntrst_n <- node_obj[[txids[i]]][["cntrst_n"]]
+  if(!is.null(tmsplt) & !is.null(cntrst_n)) {
+    tmsplts[i] <- tmsplt
+    cntrst_ns[i] <- cntrst_n
+    nms[i] <- node_obj[[txids[i]]][["nm"]][["scientific name"]]
+  }
+}
+bool <- !is.na(cntrst_ns)
+cntrst_ns <- cntrst_ns[bool]
+tmsplts <- tmsplts[bool]
+txids <- txids[bool]
+nms <- nms[bool]
+epi <- data.frame(nm=nms, txid=txids, tmsplt=tmsplts, cntrst_n=cntrst_ns,
+                  stringsAsFactors=FALSE)
+
+# CALCULATE EPIS
+epi$nt_indx <- epi[['cntrst_n']]/epi[['tmsplt']]
+epi$nt_indx_lg <- log(epi[["nt_indx"]])
+
+# VISUALISE
 
 # OUTPUT
 cat("Outputting ...\n")
-save(metrics, file = file.path(output.dir, paste0(stdy_grp, ".RData")))
+save(node_obj, epi, file=output_file)
 
 # END
 cat(paste0('\nStage `epi` finished at [', Sys.time(), ']\n'))

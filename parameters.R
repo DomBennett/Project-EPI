@@ -44,3 +44,4 @@ max_cntrst_n <- 0.01  # maximum contrasted N for a living fossil
 min_prnt_n <- 1000    # minimum number of descendant species in direct parent
 max_nsstrs <- 100     # maximum number of sisters, if node is polytomous
 min_age <- 50         # minimum age of a node in MY
+lf_cutoff <- -1       # highest EPI for a living fossil

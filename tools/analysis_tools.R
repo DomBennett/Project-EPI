@@ -17,7 +17,7 @@ if(!file.exists(cache_dir)) {
 # FUNCTIONS
 getToken <- function() {
   if(file.exists("iucn_token.R")) {
-    source("icun_token.R")
+    source("iucn_token.R")
   } else {
     msg <- "No token found!
 Apply for one here: http://apiv3.iucnredlist.org/api/v3/token
@@ -30,7 +30,13 @@ Save the token in an R script called `iucn_token.R` in the working dir:
 
 getIUCNNrrtv <- function(nm, token) {
   # Get narrative data for species from IUCN API
-  # first check if not already downloaded
+  # first make sure nm is html safe
+  nm <- sub("\\/.*", "", nm)
+  nm <- gsub("[0-9]", "", nm)
+  nm <- sub("sp\\.", "", nm)
+  nm <- paste0(toupper(substring(nm, 1,1)),
+               tolower(substring(nm, 2)), collapse="")
+  # second check if not already downloaded
   fl <- file.path(cache_dir, paste0(gsub(" ", "_", nm), '.RData'))
   if(file.exists(fl)) {
     load(fl)
@@ -127,4 +133,17 @@ genTrmMtrx <- function(lfs_hes, nlfs_hes, min_wrd_sz=5, min_freq=1) {
   tm[match(names(lf_wrds), rnms), 1] <- lf_wrds
   tm[match(names(null_wrds), rnms), 2] <- null_wrds
   tm
+}
+
+getKidNms <- function(txid) {
+  # Return the names of the children of a txid
+  kds <- node_obj[[txid]][['kids']]
+  if(kds[1] == "none") {
+    return(node_obj[[txid]][['nm']][['scientific name']])
+  }
+  nms <- vector(length=length(kds))
+  for(i in 1:length(kds)) {
+    nms[i] <- node_obj[[kds[i]]][['nm']][['scientific name']]
+  }
+  nms
 }
