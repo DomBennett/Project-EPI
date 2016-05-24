@@ -42,7 +42,6 @@ cat('Working on birds ....\n')
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path(chars_dir, file))
 trees <- read.tree(file.path(tree_dir, 'jetz_aves.tre'))
-trees <- trees[sample(1:length(trees), 1000)]
 tree <- consensus(trees)  # strict consensus tree
 clades_phylo <- MoreTreeTools::getClades(tree)
 # character data is for whole groups
