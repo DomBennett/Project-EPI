@@ -3,12 +3,13 @@
 # START
 cat(paste0('\nStage `analysis` started at [', Sys.time(), ']\n'))
 
+# FUNCTIONS
+source(file.path('tools', 'analysis_tools.R'))
+source(file.path('tools', 'node_obj_tools.R'))
+
 # PARAMETERS
 source('parameters.R')
 token <- getToken()
-
-# FUNCTIONS
-source(file.path('tools', 'analysis_tools.R'))
 
 # DIRS
 output_dir <- '7_analysis'
@@ -21,29 +22,40 @@ output_file <- file.path("7_analysis", "res.RData")
 # INPUT
 load(input_file)
 
+# GET GROUP IDS
+txids <- ls(node_obj)
+txids <- getGrpTxids(txids, grp="mammals")
+spp <- getSppTxids(txids)
+
 # GET LIVING FOSSILS
-lf_txids <- epi[['txid']][epi[['nt_indx_lg']] < -10]
+epi$ntlg_indx <- log(epi$cntrst_n) - log(epi$tmsplt)
+epi <- epi[order(epi[['ntlg_indx']], decreasing=FALSE), ]
+lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:40]
 lf_data <- vector("list", length=length(lf_txids))
 names(lf_data) <- lf_txids
 
-# SEARCH IUCN
+# SEARCH IUCN FOR LIVING FOSSILS
 for(i in 1:length(lf_data)) {
   txid <- names(lf_data)[i]
   nms <- getKidNms(txid)
-  lf_data[[txid]][['hbtts']] <- vector(length=length(nms))
+  res <- NULL
   for(j in 1:length(nms)) {
     cat('Searching [', nms[j], '] ....\n', sep="")
     nrrtv <- getIUCNNrrtv(nms[j], token)
     if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
        !is.null(nrrtv[['result']][[1]][['habitat']])) {
-      lf_data[[txid]][['hbtts']][j] <- nrrtv[['result']][[1]][['habitat']]
+      res <- c(res, nrrtv[['result']][[1]][['habitat']])
     }
   }
+  if(!is.null(res)) {
+    lf_data[[txid]][['hbbts']] <- res
+  }
 }
+lf_data <- lf_data[unlist(lapply(lf_data, function(x) length(x[[1]]) > 0))]
 
-# GET STRING DISTANCES
-itrntns <- 100
-lf_dst <- matrix(nrow=itrntns, ncol=4)
+# GET STRING DISTANCES USING PERMUTATION
+itrntns <- 99
+lf_dst <- matrix(nrow=itrntns, ncol=5)
 for(i in 1:itrntns) {
   txts <- vector(length=length(lf_data))
   for(j in 1:length(lf_data)) {
@@ -53,29 +65,42 @@ for(i in 1:itrntns) {
   res <- calcStrDst(txts, mthd='cosine')
   lf_dst[i, ] <- as.numeric(res)
 }
+colnames(lf_dst) <- colnames(res)
 
-# ITERATE
-itrtns <- 999
-null_dsts <- obs
-nulls_nrrtvs <- list()
+# GET HBBTS FOR RANDOM SPP
+itrtns <- 99
+nulls_hbbts <- list()
 for(itrtn in 1:itrtns) {
-  cat('Iteration [', itrtn, '] ....\n')
-  rnds <- sample(1:nrow(metrics), size=nrow(lfs))
-  nulls <- metrics[rnds, ]
-  for(i in 1:nrow(nulls)) {
-    nm <- nulls[i, 'node.label']
-    nulls_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
+  cat('Iteration [', itrtn, '] ....\n', sep="")
+  nulls_hbbts[[itrtn]] <- list()
+  cc <- 0
+  while(cc < length(lf_data)) {
+    null_spp <- sample(spp, size=1)
+    nm <- node_obj[[null_spp]][['nm']][['scientific name']]
+    nrrtv <- getIUCNNrrtv(nm, token)
+    if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
+       !is.null(nrrtv[['result']][[1]][['habitat']])) {
+      nulls_hbbts[[itrtn]][[nm]] <-
+        nrrtv[['result']][[1]][['habitat']]
+      cc <- cc + 1
+    }
   }
-  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['node.label']]])
-  res <- calcStrDst(nulls_hes, mthd='cosine')
-  null_dsts <- rbind(null_dsts, res)
 }
-null_dsts <- null_dsts[-1, ]
+
+# CALCULATING STR DST OF NULL
+null_dsts <- matrix(nrow=itrntns, ncol=5)
+for(i in 1:length(nulls_hbbts)) {
+  txts <- as.character(unlist(nulls_hbbts[[i]]))
+  res <- calcStrDst(txts, mthd="cosine")
+  null_dsts[i, ] <- as.numeric(res)
+}
+colnames(null_dsts) <- colnames(res)
 
 # TEST SIGNIFICANCE
-p_val <- sum(null_dsts$mean <= obs$mean)/nrow(null_dsts)
-hist(null_dsts$mean, main=paste0('P = ', signif(p_val, 3)))
-abline(v=obs$mean, col='red')
+obs_mean <- mean(lf_dst[ ,"median"])
+p_val <- sum(null_dsts[ ,"median"] <= obs_mean)/nrow(null_dsts)
+hist(null_dsts[ ,"median"], main=paste0('P = ', signif(p_val, 3)))
+abline(v=obs_mean, col='red')
 
 # WORD FREQUENCIES
 obs <- getWrdFrq(lfs_hes, min_freq=2)  # observed freqs in living fossils

@@ -75,7 +75,8 @@ calcStrDst <- function(txts, mthd) {
     dsts[i] <- stringdist(a, b, method=mthd)
   }
   res <- data.frame('min'=min(dsts), 'max'=max(dsts),
-                    'mean'=mean(dsts), 'sd'=sd(dsts))
+                    'mean'=mean(dsts), 'sd'=sd(dsts),
+                    'median'=median(dsts))
   res
 }
 

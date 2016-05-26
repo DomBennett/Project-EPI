@@ -24,6 +24,14 @@ if(parallel) {
 # 11 |	ENV	|	Environmental samples
 division_codes <- c(1, 2, 4, 5, 6, 10)
 
+# ANALYSIS GROUPS
+# which taxonomic groups will be grouped for analysis?
+anlyss_grps <- list("mammals"="40674",
+                    "birds"="8782",
+                    "rffish"="7898",
+                    "squamates"="8509",
+                    "amphibia"="8292")
+
 # IGNORE PATTERNS
 # Ignore nodes that are not true "natural" biological entities
 # Ignore extinct taxa
