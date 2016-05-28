@@ -29,8 +29,12 @@ division_codes <- c(1, 2, 4, 5, 6, 10)
 anlyss_grps <- list("mammals"="40674",
                     "birds"="8782",
                     "rffish"="7898",
-                    "squamates"="8509",
+                    "saurians"="32561",
                     "amphibia"="8292")
+
+# ANALYSIS PARAMETERS
+nitrtns <- 999  # number of iterations for permuation test
+nlfs <- 100     # number of clades at which to cutoff
 
 # IGNORE PATTERNS
 # Ignore nodes that are not true "natural" biological entities
@@ -52,4 +56,3 @@ max_cntrst_n <- 0.01  # maximum contrasted N for a living fossil
 min_prnt_n <- 1000    # minimum number of descendant species in direct parent
 max_nsstrs <- 100     # maximum number of sisters, if node is polytomous
 min_age <- 50         # minimum age of a node in MY
-lf_cutoff <- -1       # highest EPI for a living fossil
