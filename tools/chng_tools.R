@@ -174,9 +174,9 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   res <- plyr::ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
                .parallel=parallel)
   # Calculate mean change for each edge across all chars
-  edge.changes <- plyr::ddply(.data = res, .variables = .(f.node), .fun = summarize,
-                        mean.change = mean(change), n = length(change),
-                        .parallel=parallel)
+  edge.changes <- plyr::ddply(.data=res, .variables=plyr:::.(f.node),
+                              .fun=plyr::summarize, mean.change=mean(change),
+                              n=length(change), .parallel=parallel)
   edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
 }
 
