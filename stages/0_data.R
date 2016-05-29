@@ -41,28 +41,35 @@ cat('Done. Found [', ncol(chars), '] characters each on average representing [',
 cat('Working on birds ....\n')
 file <- "X1228_Morphology Matrix_morphobank.nex"
 livezy <- readNexusData(file.path(chars_dir, file))
+file <- "avian_ssd_jan07.txt"
+lislevand <- read.delim(file.path(chars_dir, file),
+                        stringsAsFactors=FALSE)
+pull <- !names(lislevand) %in% c("Family", "Species_number", "Species_name",
+                                 "English_name", "Subspecies", "References",
+                                 "X", "X.1", "X.2", "Resource")
+lislevand[lislevand == -999] <- NA  # remove missing values
+lislevand <- lislevand[lislevand[,'Species_name'] != "", ]
+dups <- lislevand[, 'Species_name'][duplicated(lislevand[, 'Species_name'])]
+for(dup in dups) {
+  i <- which(lislevand[, 'Species_name'] == dup)
+  meaned <- colMeans(lislevand[i, pull], na.rm=TRUE)
+  lislevand[i[1], pull] <- meaned
+  lislevand <- lislevand[-i[-1], ]
+}
+rownames(lislevand) <- lislevand[, 'Species_name']
+genus_nms <- sub("\\s+.*", "", lislevand[, 'Species_name'])
+lislevand <- lislevand[, pull]
+livezy <- livezy[rownames(livezy) %in% genus_nms, ]
+mtchd <- match(genus_nms, rownames(livezy))
+chars <- cbind(lislevand, livezy[mtchd, ])
 trees <- read.tree(file.path(tree_dir, 'jetz_aves.tre'))
 tree <- consensus(trees)  # strict consensus tree
 tree$edge.length <- rep(1, nrow(tree$edge))
 clades_phylo <- MoreTreeTools::getClades(tree)
-# character data is for whole groups
-# use character matching to assign the same value to memebers of the same group
-# NAs for missing taxa
-# use last tree in loop
-livezy_mod <- matrix(data=NA, nrow=length(tree$tip.label), ncol=ncol(livezy))
-rownames(livezy_mod) <- tree$tip.label
-for(i in 1:nrow(livezy)) {
-  mtchs <- which(grepl(rownames(livezy)[i], tree$tip.label))
-  if(length(mtchs) > 1) {
-    for(j in mtchs) {
-      livezy_mod[tree$tip.label[j], ] <- livezy[i, ]
-    }
-  }
-}
-data <- list(tree=tree, chars=livezy_mod, clades_phylo=clades_phylo)
+data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
 save(data, file = file.path(chars_dir, "bird.RData"))
-prep <- signif(mean(colSums(!is.na(livezy_mod)))/length(tree$tip.label), 3)
-cat('Done. Found [', ncol(livezy_mod), '] characters each on average representing [', 
+prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
+cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
     prep, '%] of all tips\n', sep="")
 
 # END
