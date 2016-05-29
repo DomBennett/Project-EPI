@@ -28,7 +28,7 @@ division_codes <- c(1, 2, 4, 5, 6, 10)
 # which taxonomic groups will be grouped for analysis?
 anlyss_grps <- list("mammals"="40674",
                     "birds"="8782",
-                    "rffish"="7898",
+                    "bony_fish"="186623",
                     "saurians"="32561",
                     "amphibia"="8292")
 
