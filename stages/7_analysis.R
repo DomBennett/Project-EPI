@@ -20,172 +20,151 @@ iucn_files <- list.files(input_dir)
 
 # LOOP THROUGH ANALYSIS GROUPS
 for(iucn_file in iucn_files) {
-  cat('    Working on [', iucn_file, '] ....\n', sep="")
   # INPUT
+  grp <- sub("\\.RData", "", iucn_file)
+  cat('    Working on [', grp, '] ....\n', sep="")
   load(file.path(input_dir, iucn_file))
+  res <- matrix(ncol=6, nrow=4)
+  colnames(res) <- c("Obs_mean", "Obs_sd", "Null_mean",
+                     "Null_sd", "Z_score", "P_val")
+  rownames(res) <- c("Categories", "Nhabitats", "Ncountries",
+                     "Desciptions")
+  pdf(file.path(output_dir, paste0(grp, ".pdf")))
   
+  # CATEGORIES
+  cat('    Testing categories ....\n')
   cates <- vector(length=length(lf_data))
   for(i in 1:length(lf_data)) {
     tmp <- vector(length=length(lf_data[[i]]))
     for(j in 1:length(lf_data[[i]])) {
-        tmp[j] <- cateAsNum(lf_data[[i]][[n]][['cate']])
+        tmp[j] <- cateAsNum(lf_data[[i]][[j]][['cate']])
     }
     cates[i] <- mean(tmp, na.rm=TRUE)
   }
-  obs <- mean(cates, na.rm=TRUE)
-  
   null <- vector(length=length(null_cate))
   for(i in 1:length(null_cate)) {
     tmp <- unlist(lapply(null_cate[[i]],
                          function(x) cateAsNum(x)))
     null[i] <- mean(tmp, na.rm=TRUE)
   }
+  obs_mean <- mean(cates, na.rm=TRUE)
+  obs_sd <- sd(cates, na.rm=TRUE)
+  null_mean <- mean(null, na.rm=TRUE)
+  null_sd <- sd(null, na.rm=TRUE)
+  p_val <- sum(null <= obs_mean)/length(null)
+  z_score <- (obs_mean - null_mean)/null_sd
+    sum(null <= obs_mean)/length(null)
+  hist(null, main=paste0('P = ', signif(p_val, 3)),
+       xlab="Categories")
+  abline(v=obs_mean, col='red')
+  res[1, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  cat("    Done.\n")
   
-  # TEST SIGNIFICANCE
-  p_val <- sum(null <= obs)/length(null)
-  hist(null, main=paste0('P = ', signif(p_val, 3)))
-  abline(v=obs, col='red')
+  # HABITATS
+  cat('    Testing habitats ....\n')
+  nhbbts <- vector(length=length(lf_data))
+  for(i in 1:length(lf_data)) {
+    tmp <- vector(length=length(lf_data[[i]]))
+    for(j in 1:length(lf_data[[i]])) {
+      tmp[j] <- lf_data[[i]][[j]][['nhbbts']]
+    }
+    nhbbts[i] <- mean(tmp, na.rm=TRUE)
+  }
+  null <- vector(length=length(null_nhbbts))
+  for(i in 1:length(null_nhbbts)) {
+    tmp <- unlist(lapply(null_nhbbts[[i]],
+                         function(x) x))
+    null[i] <- mean(tmp, na.rm=TRUE)
+  }
+  obs_mean <- mean(nhbbts, na.rm=TRUE)
+  obs_sd <- sd(nhbbts, na.rm=TRUE)
+  null_mean <- mean(null, na.rm=TRUE)
+  null_sd <- sd(null, na.rm=TRUE)
+  p_val <- sum(null <= obs_mean)/length(null)
+  z_score <- (obs_mean - null_mean)/null_sd
+  sum(null <= obs_mean)/length(null)
+  hist(null, main=paste0('P = ', signif(p_val, 3)),
+       xlab="Habitats")
+  abline(v=obs_mean, col='red')
+  res[2, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  cat("    Done.\n")
   
-}
-
-# INPUT
-load(input_file)
-
-# GET GROUP IDS
-txids <- ls(node_obj)
-txids <- getGrpTxids(txids, grp="saurians")
-spp <- getSppTxids(txids)
-
-sum(txids %in% epi[['txid']])
-
-# GET LIVING FOSSILS
-epi$ntlg_indx <- log(epi$cntrst_n) - log(epi$tmsplt)
-epi <- epi[order(epi[['ntlg_indx']], decreasing=FALSE), ]
-lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:40]
-lf_data <- vector("list", length=length(lf_txids))
-names(lf_data) <- lf_txids
-
-# SEARCH IUCN FOR LIVING FOSSILS
-for(i in 1:length(lf_data)) {
-  txid <- names(lf_data)[i]
-  nms <- getKidNms(txid)
-  res <- NULL
-  for(j in 1:length(nms)) {
-    cat('Searching [', nms[j], '] ....\n', sep="")
-    nrrtv <- getIUCNNrrtv(nms[j], token)
-    if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
-       !is.null(nrrtv[['result']][[1]][['habitat']])) {
-      res <- c(res, nrrtv[['result']][[1]][['habitat']])
+  # HABITATS
+  cat('    Testing countries ....\n')
+  ncntrs <- vector(length=length(lf_data))
+  for(i in 1:length(lf_data)) {
+    tmp <- vector(length=length(lf_data[[i]]))
+    for(j in 1:length(lf_data[[i]])) {
+      tmp[j] <- lf_data[[i]][[j]][['ncntrs']]
     }
+    ncntrs[i] <- mean(tmp, na.rm=TRUE)
   }
-  if(!is.null(res)) {
-    lf_data[[txid]][['hbbts']] <- res
+  null <- vector(length=length(null_ncntrs))
+  for(i in 1:length(null_ncntrs)) {
+    tmp <- unlist(lapply(null_ncntrs[[i]],
+                         function(x) x))
+    null[i] <- mean(tmp, na.rm=TRUE)
   }
-}
-lf_data <- lf_data[unlist(lapply(lf_data, function(x) length(x[[1]]) > 0))]
-
-# GET STRING DISTANCES USING PERMUTATION
-itrntns <- 99
-lf_dst <- matrix(nrow=itrntns, ncol=5)
-for(i in 1:itrntns) {
-  txts <- vector(length=length(lf_data))
-  for(j in 1:length(lf_data)) {
-    n <- length(lf_data[[j]][[1]])
-    txts[j] <- lf_data[[j]][[1]][[sample(1:n, 1)]]
-  }
-  res <- calcStrDst(txts, mthd='cosine')
-  lf_dst[i, ] <- as.numeric(res)
-}
-colnames(lf_dst) <- colnames(res)
-
-# GET HBBTS FOR RANDOM SPP
-itrtns <- 99
-nulls_hbbts <- list()
-for(itrtn in 1:itrtns) {
-  cat('Iteration [', itrtn, '] ....\n', sep="")
-  nulls_hbbts[[itrtn]] <- list()
-  cc <- 0
-  while(cc < length(lf_data)) {
-    null_spp <- sample(spp, size=1)
-    nm <- node_obj[[null_spp]][['nm']][['scientific name']]
-    nrrtv <- getIUCNNrrtv(nm, token)
-    if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
-       !is.null(nrrtv[['result']][[1]][['habitat']])) {
-      nulls_hbbts[[itrtn]][[nm]] <-
-        nrrtv[['result']][[1]][['habitat']]
-      cc <- cc + 1
+  obs_mean <- mean(ncntrs, na.rm=TRUE)
+  obs_sd <- sd(ncntrs, na.rm=TRUE)
+  null_mean <- mean(null, na.rm=TRUE)
+  null_sd <- sd(null, na.rm=TRUE)
+  p_val <- sum(null <= obs_mean)/length(null)
+  z_score <- (obs_mean - null_mean)/null_sd
+  sum(null <= obs_mean)/length(null)
+  hist(null, main=paste0('P = ', signif(p_val, 3)),
+       xlab="Countries")
+  abline(v=obs_mean, col='red')
+  res[3, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  cat("    Done.\n")
+  
+  # DESCRIPTION DIFFERENCE
+  cat('    Testing description difference ....\n')
+  lf_dst <- matrix(nrow=nitrtns, ncol=5)
+  ns <- vector(length=length(nitrtns))
+  for(itrtn in 1:nitrtns) {
+    txts <- vector(length=length(lf_data))
+    for(i in 1:length(lf_data)) {
+      j <- sample(1:length(lf_data[[i]]), 1)
+      txt <- lf_data[[i]][[j]][['dscrptn']]
+      if(!is.null(txt)) {
+        txts[j] <- gsub("<.*?>", "", txt)  # remove HTML
+      }
     }
+    bool <- txts != "FALSE"
+    ns[itrtn] <- sum(!bool)
+    tmp <- calcStrDst(txts[bool], mthd='cosine')
+    lf_dst[itrtn, ] <- as.numeric(tmp)
   }
-}
-
-# CALCULATING STR DST OF NULL
-null_dsts <- matrix(nrow=itrntns, ncol=5)
-for(i in 1:length(nulls_hbbts)) {
-  txts <- as.character(unlist(nulls_hbbts[[i]]))
-  res <- calcStrDst(txts, mthd="cosine")
-  null_dsts[i, ] <- as.numeric(res)
-}
-colnames(null_dsts) <- colnames(res)
-
-# TEST SIGNIFICANCE
-obs_mean <- mean(lf_dst[ ,"median"])
-p_val <- sum(null_dsts[ ,"median"] <= obs_mean)/nrow(null_dsts)
-hist(null_dsts[ ,"median"], main=paste0('P = ', signif(p_val, 3)))
-abline(v=obs_mean, col='red')
-
-# WORD FREQUENCIES
-obs <- getWrdFrq(lfs_hes, min_freq=2)  # observed freqs in living fossils
-itrtns <- 999
-null_dsts <- list()  # null freqs
-for(itrtn in 1:itrtns) {
-  cat('Iteration [', itrtn, '] ....\n')
-  rnds <- sample(1:nrow(metrics), size=nrow(lfs))
-  nulls <- metrics[rnds, ]
-  for(i in 1:nrow(nulls)) {
-    nm <- nulls[i, 'node.label']
-    nulls_nrrtvs[[nm]] <- getIUCNNrrtv(nm, token)
+  colnames(lf_dst) <- colnames(tmp)
+  null_dsts <- matrix(nrow=nitrtns, ncol=5)
+  for(i in 1:length(null_dscrptn)) {
+    txts <- as.character(unlist(null_dscrptn[[i]]))
+    txts <- sample(txts, ns[i], replace=TRUE)
+    txts <- gsub("<.*?>", "", txts)
+    tmp <- calcStrDst(txts, mthd="cosine")
+    null_dsts[i, ] <- as.numeric(tmp)
   }
-  nulls_hes <- getHbttEclgy(nulls_nrrtvs[nulls[['node.label']]])
-  res <- getWrdFrq(nulls_hes, min_freq=2)
-  null_dsts <- c(null_dsts, list(res))
-}
-# how many more times does a term appear in observed?
-wrd_res <- data.frame(wrd=NA, obs_freq=NA, exp_freq=NA,
-                      p_val=NA, z_score=NA)
-for(i in 1:length(obs)) {
-  wrd <- names(obs)[i]
-  nd <- unlist(lapply(null_dsts, function(x) {
-    if(wrd %in% names(x)) {
-      res <- x[[wrd]]
-    } else {
-      res <- 0
-    }
-    res
-  }))
-  wrd_res[i, 'wrd'] <- wrd
-  wrd_res[i, 'obs_freq'] <- obs[[wrd]]
-  wrd_res[i, 'exp_freq'] <- mean(nd)
-  wrd_res[i, 'z_score'] <- (obs[[wrd]] - mean(nd))/sd(nd)
-  wrd_res[i, 'p_val'] <- sum(nd >= obs[[wrd]])/length(nd)
-}
-temp_res <- wrd_res[wrd_res$p_val < 0.05, ]
-temp_res <- temp_res[temp_res$z_score < 5, ]
-pdf(file.path('figures', paste0('mammals', '_wordcloud.pdf')), w=14, h=14)
-wordcloud(temp_res$wrd, temp_res$z_score,
-          colors=brewer.pal(8, 'Dark2'), max.words=45)
-dev.off()
-
-
-wrd <- "solitary"
-
-for(i in 1:length(lfs_hes)) {
-  res <- gregexpr(wrd, lfs_hes[i])[[1]]
-  if(res[[1]] != -1) {
-    start <- res[[1]] - 10
-    end <- res[[1]] + attr(res, 'match.length') + 10
-    txt <- substr(lfs_hes[[i]], start=start, stop=end)
-    cat(names(lfs_hes)[i], ": ", txt, "\n", sep="")
-  }
+  colnames(null_dsts) <- colnames(tmp)
+  obs_mean <- mean(lf_dst[,'median'], na.rm=TRUE)
+  obs_sd <- sd(lf_dst[,'median'], na.rm=TRUE)
+  null_mean <- mean(null_dsts[, 'median'], na.rm=TRUE)
+  null_sd <- sd(null_dsts[, 'median'], na.rm=TRUE)
+  p_val <- sum(null_dsts[, 'median'] <= obs_mean)/nrow(null_dsts)
+  z_score <- (obs_mean - null_mean)/null_sd
+  hist(null_dsts, main=paste0('P = ', signif(p_val, 3)),
+       xlab="Description")
+  abline(v=obs_mean, col='red')
+  res[4, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  cat("    Done.\n")
+  dev.off()
+  
+  # OUTPUT
+  save(res, file=file.path(output_dir, iucn_file))
 }
 
 # END
