@@ -61,8 +61,9 @@ calcStrDst <- function(txts, mthd) {
   res
 }
 
-getWrdFrq <- function(txts, min_wrd_sz=5, min_freq=1) {
+getWrdFrq <- function(txts, wts=rep(1, length(txts)), min_wrd_sz=5, min_freq=1) {
   # Return the frequency of unique words in each string of vector txts
+  # Use wts to determine the wt of each txt
   cleanWrds <- function(txt) {
     wrds <- strsplit(txt, " ")[[1]]
     wrds <- tolower(wrds)
@@ -74,13 +75,16 @@ getWrdFrq <- function(txts, min_wrd_sz=5, min_freq=1) {
     wrds <- unique(wrds)
     wrds
   }
-  wrds <- NULL
+  wrds <- vector("list", length=length(txts))
   for(i in 1:length(txts)) {
-    wrds <- c(wrds, cleanWrds(txts[i]))
+    wrds[[i]] <- cleanWrds(txts[i])
   }
-  wrds <- table(wrds)
-  wrds <- wrds[wrds > min_freq]
-  wrds
+  nreps <- unlist(lapply(wrds, function(x) length(x)))
+  wts <- rep(wts, times=nreps)
+  wrds <- unlist(wrds)
+  tbl_wrds <- tapply(wts, wrds, sum)
+  tbl_wrds <- tbl_wrds[tbl_wrds > min_freq]
+  sort(tbl_wrds, decreasing=TRUE)
 }
 
 genTrmMtrx <- function(lfs_hes, nlfs_hes, min_wrd_sz=5, min_freq=1) {

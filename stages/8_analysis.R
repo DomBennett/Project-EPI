@@ -143,7 +143,7 @@ for(iucn_file in iucn_files) {
   null_dsts <- matrix(nrow=nitrtns, ncol=5)
   for(i in 1:length(null_dscrptn)) {
     txts <- as.character(unlist(null_dscrptn[[i]]))
-    txts <- sample(txts, ns[i], replace=TRUE)
+    txts <- sample(txts, ns[i], replace=TRUE)  # TODO: should this really be replace?
     txts <- gsub("<.*?>", "", txts)
     tmp <- calcStrDst(txts, mthd="cosine")
     null_dsts[i, ] <- as.numeric(tmp)
@@ -163,8 +163,54 @@ for(iucn_file in iucn_files) {
   cat("    Done.\n")
   dev.off()
   
+  # WORD FREQUENCIES
+  wts <- txts <- NULL
+  for(i in 1:length(lf_data)) {
+    cc <- 0
+    for(j in 1:length(lf_data[[i]])) {
+      txt <- lf_data[[i]][[j]][['dscrptn']]
+      if(!is.null(txt)) {
+        txts <- c(txts, gsub("<.*?>", "", txt))
+        cc <- cc + 1
+      }
+    }
+    wts <- c(wts, rep(1/(cc+1), cc))
+  }
+  obs_frq <- getWrdFrq(txts, wts, min_freq=2)
+  null_frqs <- vector("list", length=nitrtns)
+  for(i in 1:nitrtns) {
+    txts <- null_dscrptn[[i]]
+    txts <- gsub("<.*?>", "", txts)
+    null_frqs[[i]] <- getWrdFrq(txts, min_freq=2)
+  }
+  # how many more times does a term appear in observed?
+  frq_res <- data.frame(wrd=NA, obs_freq=NA, exp_freq=NA,
+                        p_val=NA, z_score=NA)
+  for(i in 1:length(obs_frq)) {
+    wrd <- names(obs_frq)[i]
+    nd <- unlist(lapply(null_frqs, function(x) {
+      if(wrd %in% names(x)) {
+        res <- x[[wrd]]
+      } else {
+        res <- 0
+      }
+      res
+    }))
+    frq_res[i, 'wrd'] <- wrd
+    frq_res[i, 'obs_freq'] <- obs_frq[[wrd]]
+    frq_res[i, 'exp_freq'] <- mean(nd)
+    frq_res[i, 'z_score'] <- (obs_frq[[wrd]] - mean(nd))/sd(nd)
+    frq_res[i, 'p_val'] <- sum(nd >= obs_frq[[wrd]])/length(nd)
+  }
+  plot_res <- frq_res[frq_res$p_val < 0.05, ]
+  plot_res <- plot_res[plot_res$z_score < 5, ]
+  pdf(file.path(output_dir, paste0(grp, "_wordcloud.pdf")), w=14, h=14)
+  wordcloud(plot_res$wrd, plot_res$z_score,
+            colors=brewer.pal(8, 'Dark2'), max.words=45)
+  dev.off()
+  
   # OUTPUT
-  save(res, file=file.path(output_dir, iucn_file))
+  save(res, frq_res, file=file.path(output_dir, iucn_file))
 }
 
 # END
