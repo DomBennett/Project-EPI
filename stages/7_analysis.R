@@ -3,29 +3,60 @@
 # START
 cat(paste0('\nStage `analysis` started at [', Sys.time(), ']\n'))
 
-# FUNCTIONS
-source(file.path('tools', 'analysis_tools.R'))
-source(file.path('tools', 'node_obj_tools.R'))
-
 # PARAMETERS
 source('parameters.R')
-token <- getToken()
+
+# FUNCTIONS
+source(file.path('tools', 'analysis_tools.R'))
 
 # DIRS
-output_dir <- '7_analysis'
+output_dir <- '8_analysis'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_file <- file.path("6_epi", "res.RData")
-output_file <- file.path("7_analysis", "res.RData")
+input_dir <- "7_iucn"
+output_file <- file.path("8_analysis", "res.RData")
+iucn_files <- list.files(input_dir)
+
+# LOOP THROUGH ANALYSIS GROUPS
+for(iucn_file in iucn_files) {
+  cat('    Working on [', iucn_file, '] ....\n', sep="")
+  # INPUT
+  load(file.path(input_dir, iucn_file))
+  
+  cates <- vector(length=length(lf_data))
+  for(i in 1:length(lf_data)) {
+    tmp <- vector(length=length(lf_data[[i]]))
+    for(j in 1:length(lf_data[[i]])) {
+        tmp[j] <- cateAsNum(lf_data[[i]][[n]][['cate']])
+    }
+    cates[i] <- mean(tmp, na.rm=TRUE)
+  }
+  obs <- mean(cates, na.rm=TRUE)
+  
+  null <- vector(length=length(null_cate))
+  for(i in 1:length(null_cate)) {
+    tmp <- unlist(lapply(null_cate[[i]],
+                         function(x) cateAsNum(x)))
+    null[i] <- mean(tmp, na.rm=TRUE)
+  }
+  
+  # TEST SIGNIFICANCE
+  p_val <- sum(null <= obs)/length(null)
+  hist(null, main=paste0('P = ', signif(p_val, 3)))
+  abline(v=obs, col='red')
+  
+}
 
 # INPUT
 load(input_file)
 
 # GET GROUP IDS
 txids <- ls(node_obj)
-txids <- getGrpTxids(txids, grp="mammals")
+txids <- getGrpTxids(txids, grp="saurians")
 spp <- getSppTxids(txids)
+
+sum(txids %in% epi[['txid']])
 
 # GET LIVING FOSSILS
 epi$ntlg_indx <- log(epi$cntrst_n) - log(epi$tmsplt)
