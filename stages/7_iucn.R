@@ -1,4 +1,5 @@
 # DOWNLOAD IUCN DATA ON LIVING FOSSILS AND NULL SPECIES
+# TODO: fix null downloads, having to use 'replace' in analysis stage
 
 # START
 cat(paste0('\nStage `iucn` started at [', Sys.time(), ']\n'))
@@ -34,68 +35,128 @@ for(grp in grps) {
   output_file <- file.path('7_iucn', paste0(grp, ".RData"))
   
   # GET LIVING FOSSILS
-  cat("    Finding [", nlfs, "] top most living fossil clades ....\n",
+  cat("    Finding [", nlfs, "] top most living fossil clades ....",
       sep="")
   epi <- epi[order(epi[['nt_indx_lg']], decreasing=FALSE), ]
   lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:nlfs]
-  lf_data <- vector("list", length=length(lf_txids))
-  names(lf_data) <- lf_txids
-  cat("    Done.\n")
+  if(length(lf_txids) < 20) {
+    cat("    \nToo few living fossils for this group!\n")
+    next
+  }
+  cat("Done.\n")
   
-  # SEARCH IUCN FOR LIVING FOSSILS
-  cat('    Searching IUCN for living fossil data ....\n')
-  for(i in 1:length(lf_data)) {
-    txid <- names(lf_data)[i]
+  # SEARCH IUCN FOR LIVING FOSSIL CATES
+  cat('    Searching IUCN for living fossil categories ....')
+  ignr <- NULL  # ignore all DD species
+  lf_cate <- list()
+  for(txid in lf_txids) {
     nms <- getKidNms(txid)
     res <- list()
-    for(j in 1:length(nms)) {
+    for(nm in nms) {
       #cat('Searching [', nms[j], '] ....\n', sep="")
-      cate <- getIUCNCat(nms[j], token)
-      res_nm <- list()
+      cate <- getIUCNCat(nm, token)
       if(class(cate) == "list" && length(cate[['result']]) > 0) {
-        res_nm[["cate"]] <- cate[['result']][[1]][['category']]
-      }
-      nrrtv <- getIUCNNrrtv(nms[j], token)
-      if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0) {
-        res_nm[["dscrptn"]] <- nrrtv[['result']][[1]][['habitat']]
-      }
-      hbbts <- getIUCNHbbts(nms[j], token)
-      if(class(hbbts) == "list" && length(hbbts[['result']]) > 0) {
-        nhbbts <- sum(unlist(lapply(hbbts[['result']],
-                                    function(x) x[['suitability']] == "Suitable")))
-        res_nm[['nhbbts']] <- nhbbts
-      }
-      cntrs <- getIUCNCntrs(nms[j], token)
-      if(class(cntrs) == "list" && length(cntrs[['result']]) > 0) {
-        ncntrs <- sum(unlist(lapply(cntrs[['result']],
-                                    function(x) x[['origin']] == "Native")))
-        res_nm[['ncntrs']] <- ncntrs
-      }
-      if(length(res_nm) > 0) {
-        res[[nms[j]]] <- res_nm
+        cate <- cate[['result']][[1]][['category']]
+        if(cate == "DD") {
+          ignr <- c(ignr, nm)
+        } else {
+          res[[nm]] <- cate
+        }
       }
     }
     if(length(res) > 0) {
-      lf_data[[txid]] <- res
+      lf_cate[[txid]] <- res
     }
   }
-  lf_data <- lf_data[unlist(lapply(lf_data, function(x) length(x[[1]]) > 0))]
-  cat("    Done. Found data for [", length(lf_data), "] ....\n", sep="")
+  if(length(lf_cate) < 20) {
+    cat("    \nToo little living fossil IUCN data for this group!\n")
+    next
+  }
+  cat("Done, found data for [", length(lf_cate), "].\n", sep="")
+  
+  # SEARCH IUCN FOR LIVING FOSSIL NARRATIVES
+  lf_dscrptn <- list()
+  cat('    Searching IUCN for living fossil descriptions ....')
+  for(txid in lf_txids) {
+    nms <- getKidNms(txid)
+    nms <- nms[!nms %in% ignr]
+    res <- list()
+    for(nm in nms) {
+      nrrtv <- getIUCNNrrtv(nm, token)
+      if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0) {
+        nrrtv <- nrrtv[['result']][[1]][['habitat']]
+        res[[nm]] <- gsub("<.*?>", "", nrrtv)  # remove html tags
+      }
+    }
+    if(length(res) > 0) {
+      lf_dscrptn[[txid]] <- res
+    }
+  }
+  cat("Done, found data for [", length(lf_dscrptn), "].\n", sep="")
+  
+  # SEARCH IUCN FOR LIVING FOSSIL HABITATS
+  lf_nhbbt <- list()
+  cat('    Searching IUCN for living fossil habitats ....')
+  for(txid in lf_txids) {
+    nms <- getKidNms(txid)
+    nms <- nms[!nms %in% ignr]
+    res <- list()
+    for(nm in nms) {
+      hbbts <- getIUCNHbbts(nm, token)
+      if(class(hbbts) == "list" && length(hbbts[['result']]) > 0) {
+        nhbbts <- sum(unlist(lapply(hbbts[['result']],
+                                    function(x) x[['suitability']] == "Suitable")))
+        res[[nm]] <- nhbbts
+      }
+    }
+    if(length(res) > 0) {
+      lf_nhbbt[[txid]] <- res
+    }
+  }
+  cat("Done, found data for [", length(lf_nhbbt), "].\n", sep="")
+  
+  # SEARCH IUCN FOR LIVING FOSSIL COUNTRIES
+  lf_ncntr <- list()
+  cat('    Searching IUCN for living fossil countries ....')
+  for(txid in lf_txids) {
+    nms <- getKidNms(txid)
+    nms <- nms[!nms %in% ignr]
+    res <- list()
+    for(nm in nms) {
+      cntrs <- getIUCNCntrs(nm, token)
+      if(class(cntrs) == "list" && length(cntrs[['result']]) > 0) {
+        ncntrs <- sum(unlist(lapply(cntrs[['result']],
+                                    function(x) x[['origin']] == "Native")))
+        res[[nm]] <- ncntrs
+      }
+    }
+    if(length(res) > 0) {
+      lf_ncntr[[txid]] <- res
+    }
+  }
+  cat("Done, found data for [", length(lf_ncntr), "].\n", sep="")
   
   # SEARCH IUCN FOR NULL CATES
-  cat('    Searching IUCN for null category data ....\n')
+  cat('    Searching IUCN for null categories ....\n')
   null_cate <- list()
   ntrys <- 0
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, '] ....\n', sep="")
+    cat('        Iteration [', itrtn, ']\n', sep="")
     null_cate[[itrtn]] <- list()
+    tmp_spp <- spp
     cc <- 0
-    while(cc < length(lf_data)) {
-      sp <- sample(spp, size=1)
+    while(cc < length(lf_cate)) {
+      sp <- sample(tmp_spp, size=1)
       nm <- node_obj[[sp]][['nm']][['scientific name']]
       cate <- getIUCNCat(nm, token)
+      sccss <- FALSE
       if(class(cate) == "list" && length(cate[['result']]) > 0) {
-        null_cate[[itrtn]][[nm]] <- cate[['result']][[1]][['category']]
+        cate <- cate[['result']][[1]][['category']]
+        sccss <- TRUE
+      }
+      if(sccss && cate != "DD") {
+        null_cate[[itrtn]][[nm]] <- cate
+        tmp_spp <- tmp_spp[tmp_spp != sp]
         cc <- cc + 1
         ntrys <- 0
       } else {
@@ -107,24 +168,32 @@ for(grp in grps) {
       }
     }
   }
-  cat("    Done.\n")
+  cat("Done.\n")
   
   # SEARCH IUCN FOR NULL HABITAT AND ECOLOGY DESCRIPTIONS
-  cat('    Searching IUCN for null description data ....\n')
+  cat('    Searching IUCN for null descriptions ....\n')
   null_dscrptn <- list()
   ntrys <- 0
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, '] ....\n', sep="")
+    cat('        Iteration [', itrtn, ']\n', sep="")
     null_dscrptn[[itrtn]] <- list()
+    tmp_spp <- spp
     cc <- 0
-    while(cc < length(lf_data)) {
-      sp <- sample(spp, size=1)
+    while(cc < length(lf_dscrptn)) {
+      sp <- sample(tmp_spp, size=1)
       nm <- node_obj[[sp]][['nm']][['scientific name']]
       nrrtv <- getIUCNNrrtv(nm, token)
-      if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
+      cate <- getIUCNCat(nm, token)
+      sccss <- FALSE
+      if(class(cate) == "list" && length(cate[['result']]) > 0) {
+        cate <- cate[['result']][[1]][['category']]
+        sccss <- cate != "DD"
+      }
+      if(sccss && class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
          !is.null(nrrtv[['result']][[1]][['habitat']])) {
         null_dscrptn[[itrtn]][[nm]] <- nrrtv[['result']][[1]][['habitat']]
         cc <- cc + 1
+        tmp_spp <- tmp_spp[tmp_spp != sp]
         ntrys <- 0
       } else {
         ntrys <- ntrys + 1
@@ -135,25 +204,33 @@ for(grp in grps) {
       }
     }
   }
-  cat("    Done.\n")
+  cat("       Done.\n")
   
   # SEARCH IUCN FOR NULL HABITAT
-  cat('    Searching IUCN for null habitat data ....\n')
-  null_nhbbts <- list()
+  cat('    Searching IUCN for null habitats ....\n')
+  null_nhbbt <- list()
   ntrys <- 0
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, '] ....\n', sep="")
-    null_nhbbts[[itrtn]] <- list()
+    cat('i=[', itrtn, '],\t', sep="")
+    null_nhbbt[[itrtn]] <- list()
     cc <- 0
-    while(cc < length(lf_data)) {
-      sp <- sample(spp, size=1)
+    tmp_spp <- spp
+    while(cc < length(lf_nhbbt)) {
+      sp <- sample(tmp_spp, size=1)
       nm <- node_obj[[sp]][['nm']][['scientific name']]
       hbbts <- getIUCNHbbts(nm, token)
-      if(class(hbbts) == "list" && length(hbbts[['result']]) > 0) {
+      cate <- getIUCNCat(nm, token)
+      sccss <- FALSE
+      if(class(cate) == "list" && length(cate[['result']]) > 0) {
+        cate <- cate[['result']][[1]][['category']]
+        sccss <- cate != "DD"
+      }
+      if(sccss && class(hbbts) == "list" && length(hbbts[['result']]) > 0) {
         nhbbts <- sum(unlist(lapply(hbbts[['result']],
                                     function(x) x[['suitability']] == "Suitable")))
-        null_nhbbts[[itrtn]][[nm]] <- nhbbts
+        null_nhbbt[[itrtn]][[nm]] <- nhbbts
         cc <- cc + 1
+        tmp_spp <- tmp_spp[tmp_spp != sp]
         ntrys <- 0
       } else {
         ntrys <- ntrys + 1
@@ -164,25 +241,33 @@ for(grp in grps) {
       }
     }
   }
-  cat("    Done.\n")
+  cat("Done.\n")
   
   # SEARCH IUCN FOR NULL COUNTRY DATA
-  cat('    Searching IUCN for null country data ....\n')
-  null_ncntrs <- list()
+  cat('    Searching IUCN for null countries ....\n')
+  null_ncntr <- list()
   ntrys <- 0
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, '] ....\n', sep="")
-    null_ncntrs[[itrtn]] <- list()
+    cat('        Iteration [', itrtn, ']\n', sep="")
+    null_ncntr[[itrtn]] <- list()
     cc <- 0
-    while(cc < length(lf_data)) {
-      sp <- sample(spp, size=1)
+    tmp_spp <- spp
+    while(cc < length(lf_ncntr)) {
+      sp <- sample(tmp_spp, size=1)
       nm <- node_obj[[sp]][['nm']][['scientific name']]
       cntrs <- getIUCNCntrs(nm, token)
-      if(class(cntrs) == "list" && length(cntrs[['result']]) > 0) {
+      cate <- getIUCNCat(nm, token)
+      sccss <- FALSE
+      if(class(cate) == "list" && length(cate[['result']]) > 0) {
+        cate <- cate[['result']][[1]][['category']]
+        sccss <- cate != "DD"
+      }
+      if(sccss && class(cntrs) == "list" && length(cntrs[['result']]) > 0) {
         ncntrs <- sum(unlist(lapply(cntrs[['result']],
                                     function(x) x[['origin']] == "Native")))
-        null_ncntrs[[itrtn]][[nm]] <- ncntrs
+        null_ncntr[[itrtn]][[nm]] <- ncntrs
         cc <- cc + 1
+        tmp_spp <- tmp_spp[tmp_spp != sp]
         ntrys <- 0
       } else {
         ntrys <- ntrys + 1
@@ -196,10 +281,11 @@ for(grp in grps) {
   cat("    Done.\n")
   
   # OUTPUT
-  cat('    Saving ....\n')
-  save(lf_data, null_cate, null_dscrptn, null_nhbbts,
-       null_ncntrs, file=output_file)
-  cat('    Done.\n')
+  cat('    Saving ....')
+  save(lf_cate, lf_dscrptn, lf_nhbbt, lf_ncntr,
+       null_cate, null_dscrptn, null_nhbbt, null_ncntr,
+       file=output_file)
+  cat('Done.\n')
 }
 
 # END
