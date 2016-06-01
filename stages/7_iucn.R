@@ -5,6 +5,7 @@
 cat(paste0('\nStage `iucn` started at [', Sys.time(), ']\n'))
 
 # FUNCTIONS
+source(file.path('tools', 'i_tools.R'))
 source(file.path('tools', 'iucn_tools.R'))
 source(file.path('tools', 'node_obj_tools.R'))
 
@@ -138,12 +139,12 @@ for(grp in grps) {
   cat("Done, found data for [", length(lf_ncntr), "].\n", sep="")
   
   # SEARCH IUCN FOR NULL CATES
-  cat('    Searching IUCN for null categories ....\n')
+  cat('    Searching IUCN for null categories (iterating) ....\n')
   null_cate <- list()
   ntrys <- 0
   cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat(itrtn, ', ', sep="")
+    iPrnt(itrtn, nitrtns)
     null_cate[[itrtn]] <- list()
     tmp_spp <- spp
     cc <- 0
@@ -173,12 +174,12 @@ for(grp in grps) {
   cat("Done.\n")
   
   # SEARCH IUCN FOR NULL HABITAT AND ECOLOGY DESCRIPTIONS
-  cat('    Searching IUCN for null descriptions ....\n')
+  cat('    Searching IUCN for null descriptions (iterating) ....\n')
   null_dscrptn <- list()
   ntrys <- 0
   cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat(itrtn, ', ', sep="")
+    iPrnt(itrtn, nitrtns)
     null_dscrptn[[itrtn]] <- list()
     tmp_spp <- spp
     cc <- 0
@@ -210,12 +211,12 @@ for(grp in grps) {
   cat("       Done.\n")
   
   # SEARCH IUCN FOR NULL HABITAT
-  cat('    Searching IUCN for null habitats ....\n')
+  cat('    Searching IUCN for null habitats (iterating) ....\n')
   null_nhbbt <- list()
   ntrys <- 0
   cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat(itrtn, ', ', sep="")
+    iPrnt(itrtn, nitrtns)
     null_nhbbt[[itrtn]] <- list()
     cc <- 0
     tmp_spp <- spp
@@ -248,12 +249,12 @@ for(grp in grps) {
   cat("Done.\n")
   
   # SEARCH IUCN FOR NULL COUNTRY DATA
-  cat('    Searching IUCN for null countries ....\n')
+  cat('    Searching IUCN for null countries (iterating) ....\n')
   null_ncntr <- list()
   ntrys <- 0
   cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat(itrtn, ', ', sep="")
+    iPrnt(itrtn, nitrtns)
     null_ncntr[[itrtn]] <- list()
     cc <- 0
     tmp_spp <- spp
