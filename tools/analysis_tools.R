@@ -29,41 +29,47 @@ cateAsNum <- function(cate) {
   NA
 }
 
-getHbttEclgy <- function(json_lst) {
-  # extract habitat and ecology descriptions from returned JSON
-  hbtts <- rep(NA, length(json_lst))
-  for(i in 1:length(json_lst)) {
-    if(length(json_lst[[i]][['result']]) > 0) {
-      res <- json_lst[[i]][['result']][[1]][['habitat']]
-      if(!is.null(res)) {
-        res <- gsub("<.*?>", "", res)  # remove HTML
-        hbtts[i] <- res
-      }
-    }
-  }
-  names(hbtts) <- names(json_lst)
-  hbtts <- hbtts[!is.na(hbtts)]
-  hbtts
+justText <- function(txt) {
+  # converts text to its readable form by removing punctuation and numbers
+  gsub("[^a-zA-Z ]", "", txt)
 }
 
-calcStrDst <- function(txts, mthd) {
+calcStrDst <- function(txts) {
   # calculate the distance between vector of texts
-  cmbs <- combn(length(txts), 2)
-  dsts <- rep(NA, ncol(cmbs))
-  for(i in 1:ncol(cmbs)) {
-    a <- txts[cmbs[ ,i]][1]
-    b <- txts[cmbs[ ,i]][2]
-    dsts[i] <- stringdist(a, b, method=mthd)
+  # or for a random subset of texts if a list of list of texts
+  if(class(txts) == "list") {
+    txts <- unlist(lapply(txts, function(x) sample(x, 1)))
   }
-  res <- data.frame('min'=min(dsts), 'max'=max(dsts),
-                    'mean'=mean(dsts), 'sd'=sd(dsts),
-                    'median'=median(dsts))
+  cmbs <- combn(length(txts), 2)
+  jw_dsts <- lv_dsts <- cosine_dsts <- rep(NA, ncol(cmbs))
+  for(i in 1:ncol(cmbs)) {
+    a <- justText(txts[cmbs[ ,i]][[1]])
+    b <- justText(txts[cmbs[ ,i]][[2]])
+    lv_dsts[i] <- stringdist(a, b, method="lv")
+    cosine_dsts[i] <- stringdist(a, b, method="cosine")
+    jw_dsts[i] <- stringdist(a, b, method="jw")
+  }
+  res <- data.frame('lv_min'=min(lv_dsts),
+                    'lv_max'=max(lv_dsts),
+                    'lv_mean'=mean(lv_dsts),
+                    'lv_sd'=sd(lv_dsts),
+                    'lv_median'=median(lv_dsts),
+                    'cosine_min'=min(cosine_dsts),
+                    'cosine_max'=max(cosine_dsts),
+                    'cosine_mean'=mean(cosine_dsts),
+                    'cosine_sd'=sd(cosine_dsts),
+                    'cosine_median'=median(cosine_dsts),
+                    'jw_min'=min(jw_dsts),
+                    'jw_max'=max(jw_dsts),
+                    'jw_mean'=mean(jw_dsts),
+                    'jw_sd'=sd(jw_dsts),
+                    'jw_median'=median(jw_dsts))
   res
 }
 
-getWrdFrq <- function(txts, wts=rep(1, length(txts)), min_wrd_sz=5, min_freq=1) {
+getWrdFrq <- function(txts, wts=rep(1, length(txts)), min_wrd_sz=5, min_freq=5) {
   # Return the frequency of unique words in each string of vector txts
-  # Use wts to determine the wt of each txt
+  # Use wts to determine the wt of each txt (e.g. a single clade is represented by mutliple texts)
   cleanWrds <- function(txt) {
     wrds <- strsplit(txt, " ")[[1]]
     wrds <- tolower(wrds)
@@ -85,38 +91,4 @@ getWrdFrq <- function(txts, wts=rep(1, length(txts)), min_wrd_sz=5, min_freq=1) 
   tbl_wrds <- tapply(wts, wrds, sum)
   tbl_wrds <- tbl_wrds[tbl_wrds > min_freq]
   sort(tbl_wrds, decreasing=TRUE)
-}
-
-genTrmMtrx <- function(lfs_hes, nlfs_hes, min_wrd_sz=5, min_freq=1) {
-  cleanWrds <- function(txt) {
-    wrds <- strsplit(txt, " ")[[1]]
-    wrds <- tolower(wrds)
-    wrds <- removePunctuation(wrds)
-    wrds <- removeNumbers(wrds)
-    wrds <- wrds[nchar(wrds) >= min_wrd_sz]
-    wrds <- sub('es$', "", wrds)  # remove plurals
-    wrds <- sub('s$', "", wrds)
-    wrds <- unique(wrds)
-    wrds
-  }
-  lf_wrds <- NULL
-  for(i in 1:length(lfs_hes)) {
-    lf_wrds <- c(lf_wrds, cleanWrds(lfs_hes[i]))
-  }
-  lf_wrds <- table(lf_wrds)
-  lf_wrds <- lf_wrds[lf_wrds > min_freq]
-  null_wrds <- NULL
-  for(i in 1:length(nlfs_hes)) {
-    null_wrds <- c(null_wrds, cleanWrds(nlfs_hes[i]))
-  }
-  null_wrds <- table(null_wrds)
-  null_wrds <- null_wrds[null_wrds > min_freq]
-  # convert to matrix
-  rnms <- sort(unique(c(names(null_wrds), names(lf_wrds))))
-  tm <- matrix(0, ncol=2, nrow=length(rnms))
-  colnames(tm) <- c('living fossil', 'null')
-  rownames(tm) <- rnms
-  tm[match(names(lf_wrds), rnms), 1] <- lf_wrds
-  tm[match(names(null_wrds), rnms), 2] <- null_wrds
-  tm
 }

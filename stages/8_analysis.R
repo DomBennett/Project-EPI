@@ -24,167 +24,171 @@ for(iucn_file in iucn_files) {
   grp <- sub("\\.RData", "", iucn_file)
   cat('    Working on [', grp, '] ....\n', sep="")
   load(file.path(input_dir, iucn_file))
-  res <- matrix(ncol=6, nrow=4)
-  colnames(res) <- c("Obs_mean", "Obs_sd", "Null_mean",
+  gen_res <- matrix(ncol=6, nrow=6)
+  colnames(gen_res) <- c("Obs_mean", "Obs_sd", "Null_mean",
                      "Null_sd", "Z_score", "P_val")
-  rownames(res) <- c("Categories", "Nhabitats", "Ncountries",
-                     "Desciptions")
+  rownames(gen_res) <- c("Categories", "Nhabitats", "Ncountries",
+                     "Desciptions_cosine", "Desciptions_lv",
+                     "Desciptions_jw")
   pdf(file.path(output_dir, paste0(grp, ".pdf")))
   
   # CATEGORIES
-  cat('    Testing categories ....\n')
-  cates <- vector(length=length(lf_data))
-  for(i in 1:length(lf_data)) {
-    tmp <- vector(length=length(lf_data[[i]]))
-    for(j in 1:length(lf_data[[i]])) {
-        tmp[j] <- cateAsNum(lf_data[[i]][[j]][['cate']])
+  cat('    Testing categories ....')
+  cates <- vector(length=length(lf_cate))
+  for(i in 1:length(lf_cate)) {
+    tmp <- vector(length=length(lf_cate[[i]]))
+    for(j in 1:length(lf_cate[[i]])) {
+      tmp[j] <- cateAsNum(lf_cate[[i]][[j]])
     }
-    cates[i] <- mean(tmp, na.rm=TRUE)
+    cates[i] <- mean(tmp)
   }
   null <- vector(length=length(null_cate))
   for(i in 1:length(null_cate)) {
     tmp <- unlist(lapply(null_cate[[i]],
                          function(x) cateAsNum(x)))
-    null[i] <- mean(tmp, na.rm=TRUE)
+    null[i] <- mean(tmp)
   }
-  obs_mean <- mean(cates, na.rm=TRUE)
-  obs_sd <- sd(cates, na.rm=TRUE)
-  null_mean <- mean(null, na.rm=TRUE)
-  null_sd <- sd(null, na.rm=TRUE)
+  obs_mean <- mean(cates)
+  obs_sd <- sd(cates)
+  null_mean <- mean(null)
+  null_sd <- sd(null)
   p_val <- sum(null <= obs_mean)/length(null)
   z_score <- (obs_mean - null_mean)/null_sd
-    sum(null <= obs_mean)/length(null)
   hist(null, main=paste0('P = ', signif(p_val, 3)),
        xlab="Categories")
   abline(v=obs_mean, col='red')
-  res[1, ] <- c(obs_mean, obs_sd, null_mean,
+  gen_res[1, ] <- c(obs_mean, obs_sd, null_mean,
                 null_sd, z_score, p_val)
-  cat("    Done.\n")
+  cat("Done.\n")
   
   # HABITATS
-  cat('    Testing habitats ....\n')
-  nhbbts <- vector(length=length(lf_data))
-  for(i in 1:length(lf_data)) {
-    tmp <- vector(length=length(lf_data[[i]]))
-    for(j in 1:length(lf_data[[i]])) {
-      tmp[j] <- lf_data[[i]][[j]][['nhbbts']]
+  cat('    Testing habitats ....')
+  nhbbts <- vector(length=length(lf_nhbbt))
+  for(i in 1:length(lf_nhbbt)) {
+    tmp <- vector(length=length(lf_nhbbt[[i]]))
+    for(j in 1:length(lf_nhbbt[[i]])) {
+      tmp[j] <- lf_data[[i]][[j]]
     }
-    nhbbts[i] <- mean(tmp, na.rm=TRUE)
+    nhbbts[i] <- mean(tmp)
   }
-  null <- vector(length=length(null_nhbbts))
-  for(i in 1:length(null_nhbbts)) {
-    tmp <- unlist(lapply(null_nhbbts[[i]],
+  null <- vector(length=length(null_nhbbt))
+  for(i in 1:length(null_nhbbt)) {
+    tmp <- unlist(lapply(null_nhbbt[[i]],
                          function(x) x))
-    null[i] <- mean(tmp, na.rm=TRUE)
+    null[i] <- mean(tmp)
   }
-  obs_mean <- mean(nhbbts, na.rm=TRUE)
-  obs_sd <- sd(nhbbts, na.rm=TRUE)
-  null_mean <- mean(null, na.rm=TRUE)
-  null_sd <- sd(null, na.rm=TRUE)
+  obs_mean <- mean(nhbbts)
+  obs_sd <- sd(nhbbts)
+  null_mean <- mean(null)
+  null_sd <- sd(null)
   p_val <- sum(null <= obs_mean)/length(null)
   z_score <- (obs_mean - null_mean)/null_sd
-  sum(null <= obs_mean)/length(null)
   hist(null, main=paste0('P = ', signif(p_val, 3)),
        xlab="Habitats")
   abline(v=obs_mean, col='red')
-  res[2, ] <- c(obs_mean, obs_sd, null_mean,
+  gen_res[2, ] <- c(obs_mean, obs_sd, null_mean,
                 null_sd, z_score, p_val)
-  cat("    Done.\n")
+  cat("Done.\n")
   
-  # HABITATS
-  cat('    Testing countries ....\n')
-  ncntrs <- vector(length=length(lf_data))
-  for(i in 1:length(lf_data)) {
-    tmp <- vector(length=length(lf_data[[i]]))
-    for(j in 1:length(lf_data[[i]])) {
-      tmp[j] <- lf_data[[i]][[j]][['ncntrs']]
+  # COUNTRIES
+  cat('    Testing countries ....')
+  ncntrs <- vector(length=length(lf_ncntr))
+  for(i in 1:length(lf_ncntr)) {
+    tmp <- vector(length=length(lf_ncntr[[i]]))
+    for(j in 1:length(lf_ncntr[[i]])) {
+      tmp[j] <- lf_ncntr[[i]][[j]]
     }
-    ncntrs[i] <- mean(tmp, na.rm=TRUE)
+    ncntrs[i] <- mean(tmp)
   }
-  null <- vector(length=length(null_ncntrs))
-  for(i in 1:length(null_ncntrs)) {
-    tmp <- unlist(lapply(null_ncntrs[[i]],
+  null <- vector(length=length(null_ncntr))
+  for(i in 1:length(null_ncntr)) {
+    tmp <- unlist(lapply(null_ncntr[[i]],
                          function(x) x))
     null[i] <- mean(tmp, na.rm=TRUE)
   }
-  obs_mean <- mean(ncntrs, na.rm=TRUE)
-  obs_sd <- sd(ncntrs, na.rm=TRUE)
-  null_mean <- mean(null, na.rm=TRUE)
-  null_sd <- sd(null, na.rm=TRUE)
+  obs_mean <- mean(ncntrs)
+  obs_sd <- sd(ncntrs)
+  null_mean <- mean(null)
+  null_sd <- sd(null)
   p_val <- sum(null <= obs_mean)/length(null)
   z_score <- (obs_mean - null_mean)/null_sd
-  sum(null <= obs_mean)/length(null)
   hist(null, main=paste0('P = ', signif(p_val, 3)),
        xlab="Countries")
   abline(v=obs_mean, col='red')
-  res[3, ] <- c(obs_mean, obs_sd, null_mean,
+  gen_res[3, ] <- c(obs_mean, obs_sd, null_mean,
                 null_sd, z_score, p_val)
-  cat("    Done.\n")
+  cat("Done.\n")
   
   # DESCRIPTION DIFFERENCE
-  cat('    Testing description difference ....\n')
-  lf_dst <- matrix(nrow=nitrtns, ncol=5)
-  ns <- vector(length=length(nitrtns))
-  for(itrtn in 1:nitrtns) {
-    txts <- vector(length=length(lf_data))
-    for(i in 1:length(lf_data)) {
-      j <- sample(1:length(lf_data[[i]]), 1)
-      txt <- lf_data[[i]][[j]][['dscrptn']]
-      if(!is.null(txt)) {
-        txts[j] <- gsub("<.*?>", "", txt)  # remove HTML
-      }
-    }
-    bool <- txts != "FALSE"
-    ns[itrtn] <- sum(!bool)
-    tmp <- calcStrDst(txts[bool], mthd='cosine')
-    lf_dst[itrtn, ] <- as.numeric(tmp)
-  }
-  colnames(lf_dst) <- colnames(tmp)
-  null_dsts <- matrix(nrow=nitrtns, ncol=5)
-  for(i in 1:length(null_dscrptn)) {
-    txts <- as.character(unlist(null_dscrptn[[i]]))
-    txts <- sample(txts, ns[i], replace=TRUE)  # TODO: should this really be replace?
-    txts <- gsub("<.*?>", "", txts)
-    tmp <- calcStrDst(txts, mthd="cosine")
-    null_dsts[i, ] <- as.numeric(tmp)
-  }
-  colnames(null_dsts) <- colnames(tmp)
-  obs_mean <- mean(lf_dst[,'median'], na.rm=TRUE)
-  obs_sd <- sd(lf_dst[,'median'], na.rm=TRUE)
-  null_mean <- mean(null_dsts[, 'median'], na.rm=TRUE)
-  null_sd <- sd(null_dsts[, 'median'], na.rm=TRUE)
-  p_val <- sum(null_dsts[, 'median'] <= obs_mean)/nrow(null_dsts)
+  cat('    Testing description difference ....')
+  lf_dsts <- plyr::mdply(.data=data.frame(i=1:nitrtns),
+                         .fun=function(i){
+                           calcStrDst(lf_dscrptn)
+                         }, .parallel=TRUE)
+  null_dsts <- plyr::mdply(.data=data.frame(i=1:nitrtns),
+                         .fun=function(i){
+                           tmp <- unlist(null_dscrptn[[i]])
+                           calcStrDst(tmp)
+                         }, .parallel=TRUE)
+  # cosine
+  obs_mean <- mean(lf_dsts[,'cosine_median'])
+  obs_sd <- sd(lf_dsts[,'cosine_median'])
+  null_mean <- mean(null_dsts[, 'cosine_median'])
+  null_sd <- sd(null_dsts[, 'cosine_median'])
+  p_val <- sum(null_dsts[, 'cosine_median'] <= obs_mean)/nrow(null_dsts)
   z_score <- (obs_mean - null_mean)/null_sd
-  hist(null_dsts, main=paste0('P = ', signif(p_val, 3)),
-       xlab="Description")
+  hist(null_dsts[, 'cosine_median'],
+       main=paste0('P = ', signif(p_val, 3)),
+       xlab="Cosine distances of description")
   abline(v=obs_mean, col='red')
-  res[4, ] <- c(obs_mean, obs_sd, null_mean,
+  gen_res[4, ] <- c(obs_mean, obs_sd, null_mean,
                 null_sd, z_score, p_val)
-  cat("    Done.\n")
+  # levenshtein
+  obs_mean <- mean(lf_dsts[,'lv_median'])
+  obs_sd <- sd(lf_dsts[,'lv_median'])
+  null_mean <- mean(null_dsts[, 'lv_median'])
+  null_sd <- sd(null_dsts[, 'lv_median'])
+  p_val <- sum(null_dsts[, 'lv_median'] <= obs_mean)/nrow(null_dsts)
+  z_score <- (obs_mean - null_mean)/null_sd
+  hist(null_dsts[, 'lv_median'],
+       main=paste0('P = ', signif(p_val, 3)),
+       xlab="Levenshtein distances of description")
+  abline(v=obs_mean, col='red')
+  gen_res[5, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  # jaro-winkler
+  obs_mean <- mean(lf_dsts[,'jw_median'])
+  obs_sd <- sd(lf_dsts[,'jw_median'])
+  null_mean <- mean(null_dsts[, 'jw_median'])
+  null_sd <- sd(null_dsts[, 'jw_median'])
+  p_val <- sum(null_dsts[, 'jw_median'] <= obs_mean)/nrow(null_dsts)
+  z_score <- (obs_mean - null_mean)/null_sd
+  hist(null_dsts[, 'jw_median'],
+       main=paste0('P = ', signif(p_val, 3)),
+       xlab="Jaro Winkler distances of description")
+  abline(v=obs_mean, col='red')
+  gen_res[6, ] <- c(obs_mean, obs_sd, null_mean,
+                null_sd, z_score, p_val)
+  cat("Done.\n")
   dev.off()
   
   # WORD FREQUENCIES
+  cat("    Testing for significant word frequencies ....")
   wts <- txts <- NULL
-  for(i in 1:length(lf_data)) {
-    cc <- 0
-    for(j in 1:length(lf_data[[i]])) {
-      txt <- lf_data[[i]][[j]][['dscrptn']]
-      if(!is.null(txt)) {
-        txts <- c(txts, gsub("<.*?>", "", txt))
-        cc <- cc + 1
-      }
-    }
-    wts <- c(wts, rep(1/(cc+1), cc))
+  for(i in 1:length(lf_dscrptn)) {
+    tmp_txts <- as.character(unlist(lf_dscrptn[[i]]))
+    n <- length(tmp_txts)
+    wts <- c(wts, rep(1/n, n))
+    txts <- c(txts, tmp_txts)
   }
-  obs_frq <- getWrdFrq(txts, wts, min_freq=2)
-  null_frqs <- vector("list", length=nitrtns)
-  for(i in 1:nitrtns) {
-    txts <- null_dscrptn[[i]]
-    txts <- gsub("<.*?>", "", txts)
-    null_frqs[[i]] <- getWrdFrq(txts, min_freq=2)
+  obs_frq <- getWrdFrq(txts, wts)
+  null_frqs <- vector("list", length=length(null_dscrptn))
+  for(i in 1:length(null_dscrptn)) {
+    txts <- as.character(unlist(null_dscrptn[[i]]))
+    null_frqs[[i]] <- getWrdFrq(txts)
   }
   # how many more times does a term appear in observed?
-  frq_res <- data.frame(wrd=NA, obs_freq=NA, exp_freq=NA,
+  frq_res <- data.frame(wrd=NA, obs_frq=NA, exp_frq=NA,
                         p_val=NA, z_score=NA)
   for(i in 1:length(obs_frq)) {
     wrd <- names(obs_frq)[i]
@@ -197,20 +201,44 @@ for(iucn_file in iucn_files) {
       res
     }))
     frq_res[i, 'wrd'] <- wrd
-    frq_res[i, 'obs_freq'] <- obs_frq[[wrd]]
-    frq_res[i, 'exp_freq'] <- mean(nd)
+    frq_res[i, 'obs_frq'] <- obs_frq[[wrd]]
+    frq_res[i, 'exp_frq'] <- mean(nd)
     frq_res[i, 'z_score'] <- (obs_frq[[wrd]] - mean(nd))/sd(nd)
     frq_res[i, 'p_val'] <- sum(nd >= obs_frq[[wrd]])/length(nd)
   }
-  plot_res <- frq_res[frq_res$p_val < 0.05, ]
-  plot_res <- plot_res[plot_res$z_score < 5, ]
-  pdf(file.path(output_dir, paste0(grp, "_wordcloud.pdf")), w=14, h=14)
-  wordcloud(plot_res$wrd, plot_res$z_score,
-            colors=brewer.pal(8, 'Dark2'), max.words=45)
-  dev.off()
+  # word counts
+  null_wc <- unlist(lapply(null_frqs, function(x) sum(x)))
+  obs_wc <- sum(obs_frq)
+  z_score <- (obs_wc - mean(null_wc))/sd(null_wc)
+  p_val <- sum(null_wc >= obs_wc)/length(null_wc)
+  wc_res <- data.frame(obs=obs_wc, null=null_wc, z_score,
+                       p_val)
+  # get word in description table
+  wrd_clade <- vector("list", length=nrow(frq_res))
+  wrd_res <- vector("list", length=2)
+  names(wrd_res) <- c('prnt', 'kids')
+  for(wrd in frq_res[['wrd']]) {
+    wrd_clade[[wrd]] <- wrd_res
+    for(i in 1:length(lf_dscrptn)) {
+      prnt <- names(lf_dscrptn)[[i]]
+      kids <- names(lf_dscrptn[[i]])
+      for(j in 1:length(lf_dscrptn[[i]])) {
+        txt <- as.character(lf_dscrptn[[i]][[j]])
+        kid <- kids[[j]]
+        if(grepl(wrd, txt)) {
+          wrd_clade[[wrd]][['prnt']] <-
+            c(wrd_clade[[wrd]][['prnt']], prnt)
+          wrd_clade[[wrd]][['kids']] <-
+            c(wrd_clade[[wrd]][['kids']], kid)
+        }
+      }
+    }
+  }
+  cat("Done.\n")
   
   # OUTPUT
-  save(res, frq_res, file=file.path(output_dir, iucn_file))
+  save(gen_res, frq_res, wc_res,
+       file=file.path(output_dir, iucn_file))
 }
 
 # END
