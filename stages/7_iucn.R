@@ -39,7 +39,8 @@ for(grp in grps) {
       sep="")
   epi <- epi[order(epi[['nt_indx_lg']], decreasing=FALSE), ]
   lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:nlfs]
-  if(length(lf_txids) < 20) {
+  lf_txids <- lf_txids[!is.na(lf_txids)]
+  if(length(lf_txids) < 10) {
     cat("    \nToo few living fossils for this group!\n")
     next
   }
@@ -68,7 +69,7 @@ for(grp in grps) {
       lf_cate[[txid]] <- res
     }
   }
-  if(length(lf_cate) < 20) {
+  if(length(lf_cate) < 10) {
     cat("    \nToo little living fossil IUCN data for this group!\n")
     next
   }
