@@ -16,6 +16,8 @@ calcMeanCladeChange <- function(tree, clades_phylo, echanges) {
 
 rmvMssg <- function(dt, prp=0.5) {
   # Remove missing values from a matrix iteratively
+  # Aim for resulting matrix to be square
+  # prp: the permessible proportion of data points that are not NA
   while(TRUE) {
     csums <- colSums(!is.na(dt))
     rsums <- rowSums(!is.na(dt))
@@ -23,15 +25,18 @@ rmvMssg <- function(dt, prp=0.5) {
     if(mean_present >= prp) {
       break
     }
-    dt <- dt[ ,csums > min(csums)]
-    dt <- dt[rsums > min(rsums), ]
+    if(ncol(dt) > nrow(dt)) {
+      dt <- dt[ ,csums > min(csums)]
+    } else {
+      dt <- dt[rsums > min(rsums), ]
+    }
     cvars <- apply(dt, MARGIN=2, FUN=var, na.rm=TRUE)
     dt <- dt[ ,cvars != 0]
   }
   dt
 }
 
-reduceChrctrMtrx <- function(chars, pcut=0.95) {
+reduceChrctrMtrx <- function(chars) {
   # Reduce a character matrix to independent componenets using PCA
   # Requires a character matrix, returns characters binned using Sturges' method.
   # Can only perform PCA on a full dataset, removes species and characters not
@@ -39,7 +44,6 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
   # 
   # Args:
   #  chars: matrix of characters with species names as rows
-  #  pcut: the proportion of variance at which to cut
   #
   # Returns:
   #  character matrix
@@ -54,7 +58,7 @@ reduceChrctrMtrx <- function(chars, pcut=0.95) {
     }
     tmp_chars[,i] <- as.numeric(chars[,i])
   }
-  tmp_chars <- rmvMssg(tmp_chars, pcut)
+  tmp_chars <- rmvMssg(tmp_chars, prp=1)
   res <- prcomp(tmp_chars)
   prop.var <- round(sapply(res$sdev^2,
                            function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
