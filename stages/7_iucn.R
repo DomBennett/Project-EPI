@@ -140,8 +140,9 @@ for(grp in grps) {
   cat('    Searching IUCN for null categories ....\n')
   null_cate <- list()
   ntrys <- 0
+  cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, ']\n', sep="")
+    cat(itrtn, ', ', sep="")
     null_cate[[itrtn]] <- list()
     tmp_spp <- spp
     cc <- 0
@@ -174,8 +175,9 @@ for(grp in grps) {
   cat('    Searching IUCN for null descriptions ....\n')
   null_dscrptn <- list()
   ntrys <- 0
+  cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, ']\n', sep="")
+    cat(itrtn, ', ', sep="")
     null_dscrptn[[itrtn]] <- list()
     tmp_spp <- spp
     cc <- 0
@@ -210,8 +212,9 @@ for(grp in grps) {
   cat('    Searching IUCN for null habitats ....\n')
   null_nhbbt <- list()
   ntrys <- 0
+  cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat('i=[', itrtn, '],\t', sep="")
+    cat(itrtn, ', ', sep="")
     null_nhbbt[[itrtn]] <- list()
     cc <- 0
     tmp_spp <- spp
@@ -247,8 +250,9 @@ for(grp in grps) {
   cat('    Searching IUCN for null countries ....\n')
   null_ncntr <- list()
   ntrys <- 0
+  cat('    ')
   for(itrtn in 1:nitrtns) {
-    cat('        Iteration [', itrtn, ']\n', sep="")
+    cat(itrtn, ', ', sep="")
     null_ncntr[[itrtn]] <- list()
     cc <- 0
     tmp_spp <- spp
