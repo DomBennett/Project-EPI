@@ -69,6 +69,7 @@ chars <- chars[rownames(chars) %in% tree$tip.label,]
 mssng <- tree$tip.label[!tree$tip.label %in% rownames(chars)]
 mssng_dt <- matrix(NA, ncol=ncol(chars), nrow=length(mssng))
 rownames(mssng_dt) <- mssng
+colnames(mssng_dt) <- colnames(chars)
 chars <- rbind(chars, mssng_dt)  # ensure no tip is missing from chars
 tree$edge.length <- rep(1, nrow(tree$edge))
 clades_phylo <- MoreTreeTools::getClades(tree)
