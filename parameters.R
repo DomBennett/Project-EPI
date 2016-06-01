@@ -30,7 +30,8 @@ anlyss_grps <- list("mammals"="40674",
                     "birds"="8782",
                     "bony_fish"="186623",
                     "saurians"="32561",
-                    "amphibia"="8292")
+                    "amphibia"="8292",
+                    "vertebrates"="7742")
 
 # ANALYSIS PARAMETERS
 nitrtns <- 999  # number of iterations for permuation test
