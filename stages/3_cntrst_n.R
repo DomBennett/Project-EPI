@@ -11,7 +11,7 @@ source(file.path('tools', 'node_obj_tools.R'))
 
 # DIRS
 if(!file.exists("3_cntrst_n")) {
-  dir.create("3_ctrst_n")
+  dir.create("3_cntrst_n")
 }
 output_file <- file.path("3_cntrst_n", "res.RData")
 input_file <- file.path('2_node_obj', 'res.RData')
