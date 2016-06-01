@@ -13,14 +13,13 @@ source(file.path('tools', 'node_obj_tools.R'))
 if(!file.exists("3_cntrst_n")) {
   dir.create("3_cntrst_n")
 }
-output_file <- file.path("3_cntrst_n", "res.RData")
 input_file <- file.path('2_node_obj', 'res.RData')
 
 # INPUT
 load(input_file)
 
 # REMOVE SUBSPECIES
-cat("Removing subspecies ....\n")
+cat("Removing subspecies ....")
 txids <- ls(node_obj)
 for(txid in txids) {
   rank <- node_obj[[txid]][['rank']]
@@ -28,10 +27,11 @@ for(txid in txids) {
     rm(list=txid, envir=node_obj)
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_1.RData"))
 cat("Done. [", length(node_obj), "] nodes.\n", sep="")
 
 # PARSE NAMES
-cat("Parsing names ....\n")
+cat("Parsing names ....")
 blcklst <- NULL
 txids <- ls(node_obj)
 for(txid in txids) {
@@ -60,10 +60,11 @@ while(unfnshd) {
     }
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_2.RData"))
 cat("Done. [", length(node_obj), "] nodes.\n", sep="")
 
 # ADD POST-NODE ID SLOT
-cat("Adding post-node IDs to node object ....\n")
+cat("Adding post-node IDs to node object ....")
 txids <- ls(node_obj)
 for(txid in txids) {
   prid <- node_obj[[txid]][['prid']]
@@ -72,10 +73,11 @@ for(txid in txids) {
       c(node_obj[[prid]][['ptid']], txid)
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_3.RData"))
 cat('Done.\n') 
 
 # REMOVE SINGLETONS
-cat("Removing singleton nodes ....\n")
+cat("Removing singleton nodes ....")
 txids <- ls(node_obj)
 for(txid in txids) {
   ptids <- node_obj[[txid]][['ptid']]
@@ -91,10 +93,11 @@ for(txid in txids) {
     rm(list=txid, envir=node_obj)
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_4.RData"))
 cat("Done. [", length(node_obj), "] furcating nodes.\n", sep="")
 
 # ADD KIDS TO NODES
-cat("Adding kids to node object ....\n")
+cat("Adding kids to node object ....")
 txids <- ls(node_obj)
 spp <- which(unlist(lapply(txids, function(x) node_obj[[x]][['rank']] == "species")))
 for(i in spp) {
@@ -103,10 +106,11 @@ for(i in spp) {
   prid <- node_obj[[kid]][['prid']]
   addKid(prid, kid)
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_5.RData"))
 cat("Done. [", length(node_obj), "] nodes with more than 1 kids.\n", sep="")
 
 # ADD SISTER ID SLOT
-cat("Adding sister IDs to node object ....\n")
+cat("Adding sister IDs to node object ....")
 for(txid in txids) {
   prid <- node_obj[[txid]][["prid"]]
   if(prid %in% txids) {
@@ -114,10 +118,11 @@ for(txid in txids) {
     node_obj[[txid]][['sstr']] <- cnddts[cnddts != txid]
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_6.RData"))
 cat('Done.\n')
 
 # ADD CONTRAST N ESTIMATES
-cat("Calculating contrast N ....\n")
+cat("Calculating contrast N ....")
 for(txid in txids) {
   sstrs <- node_obj[[txid]][['sstr']]
   if(!is.null(sstrs) && length(sstrs) > 0) {
@@ -132,11 +137,12 @@ for(txid in txids) {
     }
   }
 }
+save(node_obj, file=file.path("3_cntrst_n", "res_7.RData"))
 cat('Done.\n')
 
 # IDENTIFYING LIKELY LFS BASED ON CNTRST_N AND PARENT SIZE
 # this avoids searching timetree nodes that are likely to be young
-cat("Identifying candidates ....\n")
+cat("Identifying candidates ....")
 txids <- ls(node_obj)
 cnddts <- vector(length=length(txids))
 for(i in 1:length(txids)) {
@@ -154,11 +160,7 @@ for(i in 1:length(txids)) {
 }
 cnddts <- txids[cnddts]
 cat("Done. [", length(cnddts), "] candidates nodes.\n", sep="")
-
-# OUTPUT
-cat('Saving ....\n')
-save(node_obj, cnddts, file=output_file)
-cat('Done.\n')
+save(node_obj, cnddts, file=file.path("3_cntrst_n", "res.RData"))
 
 # TOP-10
 cat("And the top 100 NCBI contrast N nodes are....\n")
