@@ -62,7 +62,7 @@ reduceChrctrMtrx <- function(chars) {
   res <- prcomp(tmp_chars)
   prop.var <- round(sapply(res$sdev^2,
                            function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
-  pull <- cumsum(prop.var) < pcut
+  pull <- cumsum(prop.var) < 1
   crds <- res$x[ ,pull]
   new_chars <- matrix(NA, nrow=nrow(chars),
                       ncol=ncol(crds))
