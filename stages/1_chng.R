@@ -35,7 +35,7 @@ for(phychr_file in phychr_files) {
   cat("Done.\n")
   
   cat("    Reducing character matrix .... ")
-  chars <- reduceChrctrMtrx(chars, pcut=1)
+  chars <- reduceChrctrMtrx(chars)
   prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
   cat('Done, found [', ncol(chars), '] characters each on average representing [', 
       prep, '%] of all tips\n', sep="")
