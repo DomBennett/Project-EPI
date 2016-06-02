@@ -8,10 +8,10 @@ cat(paste0('\nStage `node_obj` started at [', Sys.time(), ']\n'))
 source('parameters.R')
 
 # DIRS
-if(!file.exists("1_node_obj")) {
-  dir.create("1_node_obj")
+if(!file.exists("3_node_obj")) {
+  dir.create("3_node_obj")
 }
-output_file <- file.path("1_node_obj", "res.RData")
+output_file <- file.path("3_node_obj", "res.RData")
 input_dir <- file.path('0_data', 'ncbi_taxonomy')
 
 # INPUT

@@ -9,7 +9,7 @@ simpleCap <- function(x) {
 }
 
 # START
-cat(paste0('\nStage `rankings_results` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `plotly` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 source('parameters.R')
@@ -18,7 +18,7 @@ source('parameters.R')
 library(plotly)
 
 # DIRS
-input_file <- file.path('4_timetree', "res.RData")
+input_file <- file.path('6_timetree', "res.RData")
 
 # INPUT
 load(input_file)

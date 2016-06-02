@@ -12,12 +12,12 @@ cat("Loading libraries ...\n")
 source(file.path("tools", "epi_tools.R"))
 
 # DIRS
-output_dir <- '6_epi'
+output_dir <- '7_epi'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_file <- file.path("5_timetree", "res.RData")
-output_file <- file.path("6_epi", "res.RData")
+input_file <- file.path("6_timetree", "res.RData")
+output_file <- file.path(output_dir, "res.RData")
 
 # INPUT
 load(input_file)

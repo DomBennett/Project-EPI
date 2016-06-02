@@ -1,7 +1,5 @@
 # GET NODE TIMINGS WITH PUBLISHED PHYLOGENIES
-
-# TODO:
-# -- use division codes to minimise looping and calculate for more than just cnddts
+# TODO: use analysis groups to reduce looping
 
 # START
 cat(paste0('\nStage `phylotime` started at [', Sys.time(), ']\n'))
@@ -14,12 +12,12 @@ library(treeman)
 source(file.path('tools', 'phylotime_tools.R'))
 
 # DIRS
-if(!file.exists('4_phylotime')) {
-  dir.create('4_phylotime')
+if(!file.exists('5_phylotime')) {
+  dir.create('5_phylotime')
 }
 tree_dir <- file.path("0_data", "trees")
-input_file <- file.path("3_cntrst_n", "res.RData")
-output_file <- file.path('4_phylotime', 'res.RData')
+input_file <- file.path("4_cntrst_n", "res.RData")
+output_file <- file.path('5_phylotime', 'res.RData')
 
 # INPUT
 load(input_file)

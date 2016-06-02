@@ -1,13 +1,17 @@
-# DATA WRANGLING FOR 1_CHNG
+# DATA WRANGLING FOR 2_CHNG
 
 # START
-cat(paste0('\nStage `data` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `wrangle` started at [', Sys.time(), ']\n'))
 
 # FUNCTIONS
 library(ape)
-source(file.path('tools', "data_tools.R"))
+source(file.path('tools', "wrngl_tools.R"))
 
 # DIRS
+output_dir <- "1_wrngl"
+if(!file.exists(output_dir)) {
+  dir.create(output_dir)
+}
 tree_dir <- file.path('0_data', "trees")
 chars_dir <- file.path('0_data', "chars")
 
@@ -32,7 +36,7 @@ tree <- read.tree(file.path(tree_dir, "bininda_mammalia.tre"))
 chars <- chars[rownames(chars) %in% tree$tip.label, ]
 clades_phylo <- MoreTreeTools::getClades(tree)
 data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
-save(data, file=file.path(chars_dir, "mammal.RData"))
+save(data, file=file.path(output_dir, "mammal.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
     prep, '%] of all tips\n', sep="")
@@ -74,10 +78,10 @@ chars <- rbind(chars, mssng_dt)  # ensure no tip is missing from chars
 tree$edge.length <- rep(1, nrow(tree$edge))
 clades_phylo <- MoreTreeTools::getClades(tree)
 data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
-save(data, file = file.path(chars_dir, "bird.RData"))
+save(data, file = file.path(output_dir, "bird.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
     prep, '%] of all tips\n', sep="")
 
 # END
-cat(paste0('\nStage `data` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `wrangle` finished at [', Sys.time(), ']\n'))

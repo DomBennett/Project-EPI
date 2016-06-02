@@ -1,7 +1,7 @@
 # ESTIMATE CHANGE PER NODE
 
 # START
-cat(paste0('\nStage `chng` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `change` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 cat("Loading parameters ...\n")
@@ -13,7 +13,7 @@ library(ape)
 source(file.path("tools", "chng_tools.R"))
 
 # DIRS
-input_dir <- file.path('0_data', "chars")
+input_dir <- file.path("1_wrngl")
 output_dir <- "1_chng"
 if(!file.exists(output_dir)) {
   dir.create(output_dir)
@@ -59,4 +59,4 @@ for(phychr_file in phychr_files) {
 }
 
 # END
-cat(paste0('\nStage `chng` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `change` finished at [', Sys.time(), ']\n'))

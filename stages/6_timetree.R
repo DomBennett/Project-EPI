@@ -10,19 +10,11 @@ source('parameters.R')
 source(file.path('tools', 'timetree_tools.R'))
 
 # DIRS
-cache_dir <- "caches"
-if(!file.exists(cache_dir)) {
-  dir.create(cache_dir)
+if(!file.exists('6_timetree')) {
+  dir.create('6_timetree')
 }
-cache_dir <- file.path("caches", "timetree")
-if(!file.exists(cache_dir)) {
-  dir.create(cache_dir)
-}
-if(!file.exists('5_timetree')) {
-  dir.create('5_timetree')
-}
-input_file <- file.path("3_phylotime", "res.RData")
-output_file <- file.path('4_timetree', 'res.RData')
+input_file <- file.path("5_phylotime", "res.RData")
+output_file <- file.path('6_timetree', 'res.RData')
 
 # INPUT
 load(input_file)

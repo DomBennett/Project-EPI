@@ -1,7 +1,7 @@
 # PARSE NODE OBJ AND CALCULATE CONTRST N
 
 # START
-cat(paste0('\nStage `cntrst_n` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `contrast N` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 source('parameters.R')
@@ -10,10 +10,11 @@ source('parameters.R')
 source(file.path('tools', 'node_obj_tools.R'))
 
 # DIRS
-if(!file.exists("3_cntrst_n")) {
-  dir.create("3_cntrst_n")
+output_dir <- "4_cntrst_n"
+if(!file.exists(output_dir)) {
+  dir.create(output_dir)
 }
-input_file <- file.path('2_node_obj', 'res.RData')
+input_file <- file.path('3_node_obj', 'res.RData')
 
 # INPUT
 load(input_file)
@@ -27,7 +28,7 @@ for(txid in txids) {
     rm(list=txid, envir=node_obj)
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_1.RData"))
+save(node_obj, file=file.path(output_dir, "res_1.RData"))
 cat("Done. [", length(node_obj), "] nodes.\n", sep="")
 
 # PARSE NAMES
@@ -60,7 +61,7 @@ while(unfnshd) {
     }
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_2.RData"))
+save(node_obj, file=file.path(output_dir, "res_2.RData"))
 cat("Done. [", length(node_obj), "] nodes.\n", sep="")
 
 # ADD POST-NODE ID SLOT
@@ -73,7 +74,7 @@ for(txid in txids) {
       c(node_obj[[prid]][['ptid']], txid)
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_3.RData"))
+save(node_obj, file=file.path(output_dir, "res_3.RData"))
 cat('Done.\n') 
 
 # REMOVE SINGLETONS
@@ -93,7 +94,7 @@ for(txid in txids) {
     rm(list=txid, envir=node_obj)
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_4.RData"))
+save(node_obj, file=file.path(output_dir, "res_4.RData"))
 cat("Done. [", length(node_obj), "] furcating nodes.\n", sep="")
 
 # ADD KIDS TO NODES
@@ -106,7 +107,7 @@ for(i in spp) {
   prid <- node_obj[[kid]][['prid']]
   addKid(prid, kid)
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_5.RData"))
+save(node_obj, file=file.path(output_dir, "res_5.RData"))
 cat("Done. [", length(node_obj), "] nodes with more than 1 kids.\n", sep="")
 
 # ADD SISTER ID SLOT
@@ -118,7 +119,7 @@ for(txid in txids) {
     node_obj[[txid]][['sstr']] <- cnddts[cnddts != txid]
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_6.RData"))
+save(node_obj, file=file.path(output_dir, "res_6.RData"))
 cat('Done.\n')
 
 # ADD CONTRAST N ESTIMATES
@@ -137,7 +138,7 @@ for(txid in txids) {
     }
   }
 }
-save(node_obj, file=file.path("3_cntrst_n", "res_7.RData"))
+save(node_obj, file=file.path(output_dir, "res_7.RData"))
 cat('Done.\n')
 
 # IDENTIFYING LIKELY LFS BASED ON CNTRST_N AND PARENT SIZE
@@ -160,7 +161,7 @@ for(i in 1:length(txids)) {
 }
 cnddts <- txids[cnddts]
 cat("Done. [", length(cnddts), "] candidates nodes.\n", sep="")
-save(node_obj, cnddts, file=file.path("3_cntrst_n", "res.RData"))
+save(node_obj, cnddts, file=file.path(output_dir, "res.RData"))
 
 # TOP-10
 cat("And the top 100 NCBI contrast N nodes are....\n")
@@ -181,4 +182,4 @@ for(i in ordrd) {
 }
 
 # END
-cat(paste0('\nStage `cntrst_n` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `contrast N` finished at [', Sys.time(), ']\n'))

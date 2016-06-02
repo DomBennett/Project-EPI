@@ -1,21 +1,21 @@
 # TEST IF LIVING FOSSILS SHARE MORE
 
 # START
-cat(paste0('\nStage `analysis` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `iucn permutation` started at [', Sys.time(), ']\n'))
 
 # PARAMETERS
 source('parameters.R')
 
 # FUNCTIONS
-source(file.path('tools', 'analysis_tools.R'))
+source(file.path('tools', 'iucn_prmttn_tools.R'))
 
 # DIRS
-output_dir <- '8_analysis'
+output_dir <- '9_iucn_prmttn'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_dir <- "7_iucn"
-output_file <- file.path("8_analysis", "res.RData")
+input_dir <- "8_iucn_dwnld"
+output_file <- file.path(otput_dir, "res.RData")
 iucn_files <- list.files(input_dir)
 
 # LOOP THROUGH ANALYSIS GROUPS
@@ -242,4 +242,4 @@ for(iucn_file in iucn_files) {
 }
 
 # END
-cat(paste0('\nStage `analysis` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `iucn permutation` finished at [', Sys.time(), ']\n'))

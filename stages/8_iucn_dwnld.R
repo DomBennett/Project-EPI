@@ -1,12 +1,11 @@
 # DOWNLOAD IUCN DATA ON LIVING FOSSILS AND NULL SPECIES
-# TODO: fix null downloads, having to use 'replace' in analysis stage
 
 # START
-cat(paste0('\nStage `iucn` started at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `iucn download` started at [', Sys.time(), ']\n'))
 
 # FUNCTIONS
 source(file.path('tools', 'i_tools.R'))
-source(file.path('tools', 'iucn_tools.R'))
+source(file.path('tools', 'iucn_dwnld_tools.R'))
 source(file.path('tools', 'node_obj_tools.R'))
 
 # PARAMETERS
@@ -14,11 +13,11 @@ source('parameters.R')
 token <- getToken()
 
 # DIRS
-output_dir <- '7_iucn'
+output_dir <- '8_iucn_dwnld'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_file <- file.path("6_epi", "res.RData")
+input_file <- file.path("7_epi", "res.RData")
 
 # INPUT
 load(input_file)
@@ -33,7 +32,7 @@ for(grp in grps) {
   txids <- ls(node_obj)
   txids <- getGrpTxids(txids, grp=grp)
   spp <- getSppTxids(txids)
-  output_file <- file.path('7_iucn', paste0(grp, ".RData"))
+  output_file <- file.path('7_iucn_dwnld', paste0(grp, ".RData"))
   
   # GET LIVING FOSSILS
   cat("    Finding [", nlfs, "] top most living fossil clades ....",
@@ -295,4 +294,4 @@ for(grp in grps) {
 }
 
 # END
-cat(paste0('\nStage `iucn` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `iucn download` finished at [', Sys.time(), ']\n'))

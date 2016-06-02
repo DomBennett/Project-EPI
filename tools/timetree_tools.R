@@ -1,4 +1,15 @@
 
+# DIRS
+cache_dir <- "caches"
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
+}
+cache_dir <- file.path("caches", "timetree")
+if(!file.exists(cache_dir)) {
+  dir.create(cache_dir)
+}
+
+# FUNCTIONS
 getTTOL <- function(sp1, sp2) {
   # search timetree via html
   # TODO: avoid line numbers, control for failure
