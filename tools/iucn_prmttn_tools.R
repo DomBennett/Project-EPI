@@ -1,7 +1,5 @@
 # LIBS
 library(stringdist)
-library(wordcloud)
-library(tm)
 
 cateAsNum <- function(cate) {
   # Convert IUCN redlist category to number
