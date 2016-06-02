@@ -15,7 +15,7 @@ if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
 input_dir <- "8_iucn_dwnld"
-output_file <- file.path(otput_dir, "res.RData")
+output_file <- file.path(output_dir, "res.RData")
 iucn_files <- list.files(input_dir)
 
 # LOOP THROUGH ANALYSIS GROUPS
@@ -67,7 +67,7 @@ for(iucn_file in iucn_files) {
   for(i in 1:length(lf_nhbbt)) {
     tmp <- vector(length=length(lf_nhbbt[[i]]))
     for(j in 1:length(lf_nhbbt[[i]])) {
-      tmp[j] <- lf_data[[i]][[j]]
+      tmp[j] <- lf_nhbbt[[i]][[j]]
     }
     nhbbts[i] <- mean(tmp)
   }
