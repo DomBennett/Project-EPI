@@ -10,6 +10,7 @@ source('parameters.R')
 # FUNCTIONS
 library(treeman)
 source(file.path('tools', 'phylotime_tools.R'))
+source(file.path('tools', 'node_obj_tools.R'))
 
 # DIRS
 if(!file.exists('5_phylotime')) {
@@ -18,6 +19,7 @@ if(!file.exists('5_phylotime')) {
 tree_dir <- file.path("0_data", "trees")
 input_file <- file.path("4_cntrst_n", "res.RData")
 output_file <- file.path('5_phylotime', 'res.RData')
+dst_mtrx_dir <- file.path('1_wrngl')
 
 # INPUT
 load(input_file)
@@ -28,16 +30,25 @@ cat("Looping through all published trees ....\n")
 ttl_cc <- 0
 for(tree_file in tree_files) {
   # INPUT
-  cat('    Reading in [', tree_file, '] ....\n', sep="")
+  grp <- sub("\\.tre", "", tree_file)
+  cat('    Reading in [', grp, '] ....\n', sep="")
+  txids <- ls(node_obj)
+  txids <- getGrpTxids(txids, grp=grp)
+  spp <- getSppTxids(txids)
   tree <- readTree(file.path(tree_dir, tree_file))
   map_obj <- list()
   cat("    Done.\n")
   
+  # DISTANCE MATRIX
+  cat("    Distance matrix .... ")
+  # run this here while the tree is read in
+  dst_mtrx <- calcDstMtrx(tree, tree['all'], .parallel=parallel)
+  save(dst_mtrx, file=file.path(dst_mtrx_dir, paste0(grp, ".RData")))
+  cat("Done.\n")
+  
   # MATCH TIPS TO NMS
-  cat("    Matching tree tips to named species in node_obj ....\n")
+  cat("    Matching tree tips to named species in node_obj .... ")
   cc <- 0
-  txids <- ls(node_obj)
-  spp <- unlist(lapply(txids, function(x) if(node_obj[[x]][['rank']] == "species") x))
   mtch_tps <- gsub("_", " ", tree['tips'])
   tps <- tree['tips']
   for(sp in spp) {
@@ -47,10 +58,10 @@ for(tree_file in tree_files) {
       cc <- cc + 1
     }
   }
-  cat("    Done. Matched [", cc, "] nodes to tips in tree.\n", sep="")
+  cat("    Done, matched [", cc, "] nodes to tips in tree.\n", sep="")
   
   # MATCH NODES OF INTEREST TO NODES IN TREE
-  cat("    Matching nodes in node_obj to tree ....\n")
+  cat("    Matching nodes in node_obj to tree ....")
   cc <- 0
   nids <- tree['nds']
   tree_kids <- getNdsKids(tree, ids=nids)
@@ -84,10 +95,10 @@ for(tree_file in tree_files) {
       }
     }
   }
-  cat("    Done. Matched [", cc, "] nodes to tree.\n", sep="")
+  cat(" Done, matched [", cc, "] nodes to tree.\n", sep="")
   
   # FIND PD, ED, PE AND AGE FOR EVERY NODE
-  cat("    Adding tree timings to node_obj ....\n")
+  cat("    Adding tree timings to node_obj .... ")
   ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
   cc <- 0
   mtxids <- names(map_obj)
@@ -118,14 +129,14 @@ for(tree_file in tree_files) {
     cc <- cc + 1
     ttl_cc <- ttl_cc + 1
   }
-  cat("    Done. Got timings for [", cc, "] nodes from tree.\n", sep="")
+  cat("Done, got timings for [", cc, "] nodes from tree.\n", sep="")
 }
 cat("Done. Got timings for [", ttl_cc, "] nodes from all trees.\n", sep="")
 
 # OUTPUT
-cat('Saving ....\n')
+cat('Saving .... ')
 save(node_obj, cnddts, file=output_file)
 cat('Done.\n')
 
 # END
-cat(paste0('\nStage `phylotree` finished at [', Sys.time(), ']\n'))
+cat(paste0('\nStage `phylotime` finished at [', Sys.time(), ']\n'))

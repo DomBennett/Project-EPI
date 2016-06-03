@@ -8,7 +8,7 @@ getGrpTxids <- function(txids, grp) {
     }
     bool
   }
-  fl <- file.path('2_node_obj', paste0(grp, "_txids.RData"))
+  fl <- file.path('3_node_obj', paste0(grp, "_txids.RData"))
   if(file.exists(fl)) {
     load(fl)
     return(txids)
