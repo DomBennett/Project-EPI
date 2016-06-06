@@ -14,7 +14,7 @@ source(file.path("tools", "chng_tools.R"))
 
 # DIRS
 input_dir <- file.path("1_wrngl")
-output_dir <- "1_chng"
+output_dir <- "2_chng"
 if(!file.exists(output_dir)) {
   dir.create(output_dir)
 }
