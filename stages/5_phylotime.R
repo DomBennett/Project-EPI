@@ -28,12 +28,14 @@ tree_files <- list.files(tree_dir)
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")
 ttl_cc <- 0
+top_cnddts <- cnddts
 for(tree_file in tree_files) {
   # INPUT
   grp <- sub("\\.tre", "", tree_file)
   cat('    Reading in [', grp, '] ....\n', sep="")
   txids <- ls(node_obj)
   txids <- getGrpTxids(txids, grp=grp)
+  cnddts <- c(txids, cnddts)
   spp <- getSppTxids(txids)
   tree <- readTree(file.path(tree_dir, tree_file))
   map_obj <- list()
@@ -65,7 +67,7 @@ for(tree_file in tree_files) {
   cc <- 0
   nids <- tree['nds']
   tree_kids <- getNdsKids(tree, ids=nids)
-  for(txid in cnddts) {
+  for(txid in txids) {
     nd_kids <- node_obj[[txid]][['kids']]
     if(nd_kids[1] != "none") {
       nd_tips <- vector(length=length(nd_kids))
@@ -135,7 +137,7 @@ cat("Done. Got timings for [", ttl_cc, "] nodes from all trees.\n", sep="")
 
 # OUTPUT
 cat('Saving .... ')
-save(node_obj, cnddts, file=output_file)
+save(node_obj, top_cnddts, cnddts, file=output_file)
 cat('Done.\n')
 
 # END

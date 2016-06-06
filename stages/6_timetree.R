@@ -22,7 +22,7 @@ load(input_file)
 # LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree ....\n')
 cc <- 0
-for(txid in cnddts) {
+for(txid in top_cnddts) {
   if('tmsplt' %in% names(node_obj[[txid]])) {
     cc <- cc + 1
     next
@@ -40,7 +40,7 @@ cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")
 
 # OUTPUT
 cat('Saving ....\n')
-save(node_obj, cnddts, file=output_file)
+save(node_obj, top_cnddts, cnddts, file=output_file)
 cat('Done.\n')
 
 # END
