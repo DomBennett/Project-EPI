@@ -32,12 +32,14 @@ for(phychr_file in phychr_files) {
   chars <- data[["chars"]]
   clades_phylo <- data[['clades_phylo']]
   rm(data)
-  cat("Done, found character matrix of [", nrow(chars),
-      "] characters and [", ncol(chars), "] species\n")
+  nspp <- sum(rowSums(!is.na(chars)) > 0)
+  cat("Done, found character matrix of [", ncol(chars),
+      "] characters and [", nspp, '/', length(tree$tip.label),
+      '] tips\n', sep="")
   
   cat("    Reducing character matrix .... ")
   chars <- reduceChrctrMtrx(chars)
-  nspp <- sum(colSums(!is.na(chars)) > 0)
+  nspp <- sum(rowSums(!is.na(chars)) > 0)
   cat('Done, found [', ncol(chars), '] characters for [', 
       nspp, '/', length(tree$tip.label), '] tips\n', sep="")
   
