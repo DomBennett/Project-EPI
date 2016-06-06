@@ -1,5 +1,3 @@
-# LIBS
-library(stringdist)
 
 cateAsNum <- function(cate) {
   # Convert IUCN redlist category to number
@@ -43,9 +41,9 @@ calcStrDst <- function(txts) {
   for(i in 1:ncol(cmbs)) {
     a <- justText(txts[cmbs[ ,i]][[1]])
     b <- justText(txts[cmbs[ ,i]][[2]])
-    lv_dsts[i] <- stringdist(a, b, method="lv")
-    cosine_dsts[i] <- stringdist(a, b, method="cosine")
-    jw_dsts[i] <- stringdist(a, b, method="jw")
+    lv_dsts[i] <- stringdist::stringdist(a, b, method="lv")
+    cosine_dsts[i] <- stringdist::stringdist(a, b, method="cosine")
+    jw_dsts[i] <- stringdist::stringdist(a, b, method="jw")
   }
   res <- data.frame('lv_min'=min(lv_dsts),
                     'lv_max'=max(lv_dsts),
@@ -71,8 +69,8 @@ getWrdFrq <- function(txts, wts=rep(1, length(txts)), min_wrd_sz=5, min_freq=5) 
   cleanWrds <- function(txt) {
     wrds <- strsplit(txt, " ")[[1]]
     wrds <- tolower(wrds)
-    wrds <- removePunctuation(wrds)
-    wrds <- removeNumbers(wrds)
+    wrds <- tm::removePunctuation(wrds)
+    wrds <- tm::removeNumbers(wrds)
     wrds <- wrds[nchar(wrds) >= min_wrd_sz]
     wrds <- sub('es$', "", wrds)  # remove plurals
     wrds <- sub('s$', "", wrds)
