@@ -1,5 +1,4 @@
 # GET NODE TIMINGS WITH PUBLISHED PHYLOGENIES
-# TODO: use analysis groups to reduce looping
 
 # START
 cat(paste0('\nStage `phylotime` started at [', Sys.time(), ']\n'))
@@ -11,6 +10,7 @@ source('parameters.R')
 library(treeman)
 source(file.path('tools', 'phylotime_tools.R'))
 source(file.path('tools', 'node_obj_tools.R'))
+source(file.path('tools', 'i_tools.R'))
 
 # DIRS
 if(!file.exists('5_phylotime')) {
@@ -27,7 +27,6 @@ tree_files <- list.files(tree_dir)
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")
-ttl_cc <- 0
 top_cnddts <- cnddts
 for(tree_file in tree_files) {
   # INPUT
@@ -37,103 +36,107 @@ for(tree_file in tree_files) {
   txids <- getGrpTxids(txids, grp=grp)
   cnddts <- c(txids, cnddts)
   spp <- getSppTxids(txids)
-  tree <- readTree(file.path(tree_dir, tree_file))
-  map_obj <- list()
+  trees <- readTree(file.path(tree_dir, tree_file))
   cat("    Done.\n")
+  if(class(trees) == "TreeMan") {
+    ntrees <- 1
+    trees <- list(trees)
+  } else {
+    ntrees <- trees['ntrees']
+  }
   
   # DISTANCE MATRIX
-  cat("    Distance matrix .... ")
+  cat("    Distance matrix .... \n")
   # run this here while the tree is read in
-  dst_mtrx <- calcDstMtrx(tree, tree['all'], .parallel=parallel)
-  save(dst_mtrx, file=file.path(dst_mtrx_dir, paste0(grp, ".RData")))
+  dst_mtrxs <- list()
+  for(i in 1:ntrees) {
+    iPrnt(i, ntrees)
+    tree <- trees[[i]]
+    dst_mtrxs[[i]] <- calcDstMtrx(tree, tree['all'], .parallel=parallel)
+  }
+  save(dst_mtrxs, file=file.path(dst_mtrx_dir, paste0(grp, ".RData")))
   cat("Done.\n")
   
-  # MATCH TIPS TO NMS
-  cat("    Matching tree tips to named species in node_obj .... ")
-  cc <- 0
-  mtch_tps <- gsub("_", " ", tree['tips'])
-  tps <- tree['tips']
-  for(sp in spp) {
-    bool <- node_obj[[sp]][['nm']] %in% mtch_tps
-    if(any(bool)) {
-      map_obj[[sp]][['nid']] <- tps[mtch_tps == node_obj[[sp]][['nm']][bool][1]]
-      cc <- cc + 1
+  # MAIN LOOP
+  cat("    Main loop....\n")
+  for(i in 1:ntrees) {
+    iPrnt(i, ntrees)
+    tree <- trees[[i]]
+    
+    # MATCH TIPS TO NMS
+    map_obj <- list()
+    mtch_tps <- gsub("_", " ", tree['tips'])
+    tps <- tree['tips']
+    for(sp in spp) {
+      bool <- node_obj[[sp]][['nm']] %in% mtch_tps
+      if(any(bool)) {
+        map_obj[[sp]][['nid']] <- tps[mtch_tps == node_obj[[sp]][['nm']][bool][1]]
+      }
     }
-  }
-  cat("    Done, matched [", cc, "] nodes to tips in tree.\n", sep="")
-  
-  # MATCH NODES OF INTEREST TO NODES IN TREE
-  cat("    Matching nodes in node_obj to tree ....")
-  cc <- 0
-  nids <- tree['nds']
-  tree_kids <- getNdsKids(tree, ids=nids)
-  for(txid in txids) {
-    nd_kids <- node_obj[[txid]][['kids']]
-    if(nd_kids[1] != "none") {
-      nd_tips <- vector(length=length(nd_kids))
-      for(j in 1:length(nd_kids)) {
-        if(!is.null(map_obj[[nd_kids[j]]])) {
-          nd_tips[j] <- map_obj[[nd_kids[j]]][['nid']]
+    
+    # MATCH NODES OF INTEREST TO NODES IN TREE
+    nids <- tree['nds']
+    tree_kids <- getNdsKids(tree, ids=nids)
+    for(txid in txids) {
+      nd_kids <- node_obj[[txid]][['kids']]
+      if(nd_kids[1] != "none") {
+        nd_tips <- vector(length=length(nd_kids))
+        for(j in 1:length(nd_kids)) {
+          if(!is.null(map_obj[[nd_kids[j]]])) {
+            nd_tips[j] <- map_obj[[nd_kids[j]]][['nid']]
+          }
+        }
+        nd_tips <- nd_tips[nd_tips != FALSE]
+        if(length(nd_tips) == 0) {
+          next
+        }
+        if(length(nd_tips) == 1) {
+          map_obj[[txid]][["nid"]] <- nd_tips
+        } else {
+          mtch_scrs <- vector(length=length(tree_kids))
+          for(j in 1:length(tree_kids)) {
+            mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
+              (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
+          }
+          if(max(mtch_scrs) > 1) {
+            bst_mtch <- which.max(mtch_scrs)[1]
+            map_obj[[txid]][["nid"]] <- nids[bst_mtch]
+          }
         }
       }
-      nd_tips <- nd_tips[nd_tips != FALSE]
-      if(length(nd_tips) == 0) {
+    }
+    
+    # FIND PD, ED, PE AND AGE FOR EVERY NODE
+    ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
+    mtxids <- names(map_obj)
+    for(txid in mtxids) {
+      nid <- map_obj[[txid]][['nid']]
+      if(nid == "n1") {  # this is the root
         next
       }
-      if(length(nd_tips) == 1) {
-        map_obj[[txid]][["nid"]] <- nd_tips
-        cc <- cc + 1
-      } else {
-        mtch_scrs <- vector(length=length(tree_kids))
-        for(j in 1:length(tree_kids)) {
-          mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
-            (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
-        }
-        if(max(mtch_scrs) > 1) {
-          bst_mtch <- which.max(mtch_scrs)[1]
-          map_obj[[txid]][["nid"]] <- nids[bst_mtch]
-          cc <- cc + 1
-        }
-      }
+      sid <- getNdSstr(tree, id=nid)[1]
+      age <- getNdAge(tree, id=nid)
+      kids <- getNdKids(tree, nid)
+      ed <- mean(ed_vals[which(tps %in% kids)])
+      kids <- getNdKids(tree, sid)
+      sstr_ed <- mean(ed_vals[which(tps %in% kids)])
+      spn <- getNdSlt(tree, slt_nm="spn", id=nid)
+      sstr_spn <- getNdSlt(tree, slt_nm="spn", id=sid)
+      pd <- getNdSlt(tree, slt_nm="pd", id=nid)
+      sstr_pd <- getNdSlt(tree, slt_nm="pd", id=sid)
+      assgnWMean(val=ed, nm="ed")
+      assgnWMean(val=ed/sstr_ed, nm="cntrst_ed")
+      assgnWMean(val=spn, nm="pe")
+      assgnWMean(val=(spn + 1)/(sstr_spn + 1), nm="cntrst_pe")
+      assgnWMean(val=pd, nm="pd")
+      assgnWMean(val=pd/sstr_pd, nm="cntrst_pd1")
+      assgnWMean(val=pd - sstr_pd, nm="cntrst_pd2")
+      assgnWMean(val=age, nm="age")
+      assgnWMean(val=spn + age, nm="tmsplt")
     }
   }
-  cat(" Done, matched [", cc, "] nodes to tree.\n", sep="")
-  
-  # FIND PD, ED, PE AND AGE FOR EVERY NODE
-  cat("    Adding tree timings to node_obj .... ")
-  ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
-  cc <- 0
-  mtxids <- names(map_obj)
-  for(txid in mtxids) {
-    nid <- map_obj[[txid]][['nid']]
-    if(nid == "n1") {  # this is the root
-      next
-    }
-    sid <- getNdSstr(tree, id=nid)[1]
-    age <- getNdAge(tree, id=nid)
-    kids <- getNdKids(tree, nid)
-    ed <- mean(ed_vals[which(tps %in% kids)])
-    kids <- getNdKids(tree, sid)
-    sstr_ed <- mean(ed_vals[which(tps %in% kids)])
-    spn <- getNdSlt(tree, slt_nm="spn", id=nid)
-    sstr_spn <- getNdSlt(tree, slt_nm="spn", id=sid)
-    pd <- getNdSlt(tree, slt_nm="pd", id=nid)
-    sstr_pd <- getNdSlt(tree, slt_nm="pd", id=sid)
-    node_obj[[txid]][['ed']] <- ed
-    node_obj[[txid]][['cntrst_ed']] <- ed/sstr_ed
-    node_obj[[txid]][['pe']] <- spn
-    node_obj[[txid]][['cntrst_pe']] <- (spn + 1)/(sstr_spn + 1)
-    node_obj[[txid]][['pd']] <- pd
-    node_obj[[txid]][['cntrst_pd1']] <- pd/sstr_pd
-    node_obj[[txid]][['cntrst_pd2']] <- pd - sstr_pd
-    node_obj[[txid]][['age']] <- age
-    node_obj[[txid]][['tmsplt']] <- spn + age
-    cc <- cc + 1
-    ttl_cc <- ttl_cc + 1
-  }
-  cat("Done, got timings for [", cc, "] nodes from tree.\n", sep="")
 }
-cat("Done. Got timings for [", ttl_cc, "] nodes from all trees.\n", sep="")
+cat("Done.\n")
 
 # OUTPUT
 cat('Saving .... ')
