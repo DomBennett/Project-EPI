@@ -23,7 +23,7 @@ if(!file.exists(output_dir)) {
 phychr_files <- list.files(input_dir, pattern=".RData")
 
 # LOOP THROUGH TREE FILES
-cat("Looping through all published trees and character sets .... ")
+cat("Looping through all published trees and character sets ....\n")
 ttl_cc <- 0
 for(phychr_file in phychr_files) {
   cat('    Reading in [', phychr_file, '] ....', sep="")
