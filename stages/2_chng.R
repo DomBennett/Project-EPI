@@ -32,13 +32,14 @@ for(phychr_file in phychr_files) {
   chars <- data[["chars"]]
   clades_phylo <- data[['clades_phylo']]
   rm(data)
-  cat("Done.\n")
+  cat("Done, found character matrix of [", nrow(chars),
+      "] characters and [", ncol(chars), "] species\n")
   
   cat("    Reducing character matrix .... ")
   chars <- reduceChrctrMtrx(chars)
-  prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
-  cat('Done, found [', ncol(chars), '] characters each on average representing [', 
-      prep, '%] of all tips\n', sep="")
+  nspp <- sum(colSums(!is.na(chars)) > 0)
+  cat('Done, found [', ncol(chars), '] characters for [', 
+      nspp, '/', length(tree$tip.label), '] tips\n', sep="")
   
   cat("    Estimating ancestral node states with parsimony .... ")
   reconstruction_obj <- parsimonyReconstruction(chars, tree)
