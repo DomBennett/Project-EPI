@@ -45,18 +45,6 @@ for(tree_file in tree_files) {
     ntrees <- trees['ntrees']
   }
   
-  # DISTANCE MATRIX
-  cat("    Distance matrix .... \n")
-  # run this here while the tree is read in
-  dst_mtrxs <- list()
-  for(i in 1:ntrees) {
-    iPrnt(i, ntrees)
-    tree <- trees[[i]]
-    dst_mtrxs[[i]] <- calcDstMtrx(tree, tree['all'], .parallel=parallel)
-  }
-  save(dst_mtrxs, file=file.path(dst_mtrx_dir, paste0(grp, ".RData")))
-  cat("Done.\n")
-  
   # MAIN LOOP
   cat("    Main loop....\n")
   for(i in 1:ntrees) {
