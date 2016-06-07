@@ -36,7 +36,7 @@ tree <- read.tree(file.path(tree_dir, "bininda_mammalia.tre"))
 chars <- chars[rownames(chars) %in% tree$tip.label, ]
 clades_phylo <- MoreTreeTools::getClades(tree)
 data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
-save(data, file=file.path(output_dir, "mammal.RData"))
+save(data, file=file.path(output_dir, "mammals.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
     prep, '%] of all tips\n', sep="")
@@ -78,7 +78,7 @@ chars <- rbind(chars, mssng_dt)  # ensure no tip is missing from chars
 tree$edge.length <- rep(1, nrow(tree$edge))
 clades_phylo <- MoreTreeTools::getClades(tree)
 data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
-save(data, file = file.path(output_dir, "bird.RData"))
+save(data, file = file.path(output_dir, "birds.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
     prep, '%] of all tips\n', sep="")
