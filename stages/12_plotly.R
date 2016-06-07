@@ -18,21 +18,22 @@ source('parameters.R')
 library(plotly)
 
 # DIRS
-input_file <- file.path('6_timetree', "res.RData")
+input_file <- file.path('7_epi', "res.RData")
 
 # INPUT
 load(input_file)
 
 # IDENTIFY PLOTTABLE RESULTS
-rnkngs <-data.frame(ID=cnddts,
-                    Time=rep(NA, length(cnddts)),
-                    Success=rep(NA, length(cnddts)),
-                    Change=rnorm(length(cnddts)),
-                    Sci=rep(NA, length(cnddts)),
-                    Common=rep("Not found", length(cnddts)),
+txids <- epi[['txid']]
+rnkngs <-data.frame(ID=txids,
+                    Time=rep(NA, length(txids)),
+                    Success=rep(NA, length(txids)),
+                    Change=rep(NA, length(txids)),
+                    Sci=rep(NA, length(txids)),
+                    Common=rep("Not found", length(txids)),
                     stringsAsFactors=FALSE)
-for(i in 1:length(cnddts)) {
-  txid <- cnddts[i]
+for(i in 1:length(txids)) {
+  txid <- txids[i]
   tm <- node_obj[[txid]][["tmsplt"]]
   if(!is.null(tm)) {
     rnkngs[i, 'Time'] <- log(tm)
