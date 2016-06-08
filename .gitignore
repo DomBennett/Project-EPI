@@ -16,6 +16,8 @@ dev
 test*
 
 # Data
+*log*
+caches/
 *.RData
 *.csv
 0_data/
