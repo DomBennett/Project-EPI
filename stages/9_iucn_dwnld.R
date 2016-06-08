@@ -13,11 +13,11 @@ source('parameters.R')
 token <- getToken()
 
 # DIRS
-output_dir <- '8_iucn_dwnld'
+output_dir <- '9_iucn_dwnld'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_file <- file.path("7_epi", "res.RData")
+input_file <- file.path("8_epi", "res.RData")
 
 # INPUT
 load(input_file)
@@ -37,7 +37,7 @@ for(grp in grps) {
   # GET LIVING FOSSILS
   cat("    Finding [", nlfs, "] top most living fossil clades ....",
       sep="")
-  epi <- epi[order(epi[['nt_indx_lg']], decreasing=FALSE), ]
+  epi <- epi[order(epi[['pepi']], decreasing=FALSE), ]
   lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:nlfs]
   lf_txids <- lf_txids[!is.na(lf_txids)]
   if(length(lf_txids) < 10) {

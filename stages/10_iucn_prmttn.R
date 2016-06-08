@@ -10,11 +10,11 @@ source('parameters.R')
 source(file.path('tools', 'iucn_prmttn_tools.R'))
 
 # DIRS
-output_dir <- '9_iucn_prmttn'
+output_dir <- '10_iucn_prmttn'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
-input_dir <- "8_iucn_dwnld"
+input_dir <- "9_iucn_dwnld"
 output_file <- file.path(output_dir, "res.RData")
 iucn_files <- list.files(input_dir)
 

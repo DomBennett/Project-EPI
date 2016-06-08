@@ -13,12 +13,12 @@ source(file.path('tools', 'node_obj_tools.R'))
 source(file.path('tools', 'i_tools.R'))
 
 # DIRS
-output_dir <- '11_phyloprmttn'
+output_dir <- '12_phyloprmttn'
 if(!file.exists(output_dir)) {
   dir.create(output_dir)
 }
 tree_dir <- file.path("0_data", "trees")
-input_file <- file.path('7_epi', "res.RData")
+input_file <- file.path('8_epi', "res.RData")
 
 # INPUT
 load(input_file)
@@ -44,7 +44,7 @@ for(tree_file in tree_files) {
   # GET LIVING FOSSILS
   cat("    Finding [", nlfs, "] top most living fossil clades ....",
       sep="")
-  epi <- epi[order(epi[['nt_indx_lg']], decreasing=FALSE), ]
+  epi <- epi[order(epi[['pepi']], decreasing=FALSE), ]
   lf_txids <- epi[['txid']][epi[['txid']] %in% txids][1:nlfs]
   lf_txids <- lf_txids[!is.na(lf_txids)]
   if(length(lf_txids) < 10) {
