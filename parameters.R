@@ -22,14 +22,14 @@ if(parallel) {
 # 9	 |	VRL	|	Viruses
 # 10 |	VRT	|	Vertebrates
 # 11 |	ENV	|	Environmental samples
-division_codes <- c(1, 2, 4, 5, 6, 10)
+division_codes <- c(2, 5, 6, 10)
 
 # ANALYSIS GROUPS
 # which taxonomic groups will be grouped for analysis?
 anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
                     "birds"="8782",     # must match tree name in 0_data/trees
                     "bony_fish"="186623",
-                    "saurians"="32561",
+                    "lepidosaurs"="8504",
                     "amphibia"="8292",
                     "vertebrates"="7742")
 
@@ -53,7 +53,7 @@ ignore_pttrns <- c("unclassified",       # unclassified biological entities
 # LIVING FOSSIL SETTINGS
 # These determine what node is chosen as a living fossil candidate (`cnddts`).
 # Not doing this will run the pipeline on all nodes, 100s to 1,000,0000s.
-max_cntrst_n <- 0.01  # maximum contrasted N for a living fossil
+max_cntrst_n <- 0.1  # maximum contrasted N for a living fossil
 min_prnt_n <- 1000    # minimum number of descendant species in direct parent
 max_nsstrs <- 100     # maximum number of sisters, if node is polytomous
 min_age <- 50         # minimum age of a node in MY
