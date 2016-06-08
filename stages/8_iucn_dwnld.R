@@ -32,7 +32,7 @@ for(grp in grps) {
   txids <- ls(node_obj)
   txids <- getGrpTxids(txids, grp=grp)
   spp <- getSppTxids(txids)
-  output_file <- file.path('7_iucn_dwnld', paste0(grp, ".RData"))
+  output_file <- file.path(output_dir, paste0(grp, ".RData"))
   
   # GET LIVING FOSSILS
   cat("    Finding [", nlfs, "] top most living fossil clades ....",
