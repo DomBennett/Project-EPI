@@ -18,7 +18,7 @@ source('parameters.R')
 library(plotly)
 
 # DIRS
-input_file <- file.path('7_epi', "res.RData")
+input_file <- file.path('8_epi', "res.RData")
 
 # INPUT
 load(input_file)
@@ -42,7 +42,7 @@ for(i in 1:length(txids)) {
   if(!is.null(sccss)) {
     rnkngs[i, 'Success'] <- log(sccss)
   }
-  chng <- node_obj[[txid]][["cntrst_chng"]]
+  chng <- node_obj[[txid]][["chng"]]
   if(!is.null(chng)) {
     rnkngs[i, 'Change'] <- chng
   }
@@ -54,7 +54,8 @@ for(i in 1:length(txids)) {
   }
 }
 rnkngs <- rnkngs[!is.na(rnkngs[['Time']]), ]
+rnkngs <- rnkngs[!is.na(rnkngs[['Change']]), ]
 p <- ggplot(data=rnkngs, aes(x=Time, y=Success, colour=Change)) +
-  stat_smooth(method="lm", se=FALSE, colour="red") + geom_point(aes(Sci=Sci, Common=Common))
+  geom_point(aes(Sci=Sci, Common=Common))
 p <- ggplotly(p, tooltip=c("Sci", "Common"))
 plotly_POST(p, sharing = "secret")

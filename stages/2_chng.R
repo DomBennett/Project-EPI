@@ -1,4 +1,5 @@
 # ESTIMATE CHANGE PER NODE
+# TODO: where do NaNs originate?
 
 # START
 cat(paste0('\nStage `change` started at [', Sys.time(), ']\n'))
