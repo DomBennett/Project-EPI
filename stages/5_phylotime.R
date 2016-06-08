@@ -10,6 +10,7 @@ source('parameters.R')
 library(treeman)
 source(file.path('tools', 'phylotime_tools.R'))
 source(file.path('tools', 'node_obj_tools.R'))
+source(file.path('tools', 'clade_matching_tools.R'))
 source(file.path('tools', 'i_tools.R'))
 
 # DIRS
@@ -81,11 +82,7 @@ for(tree_file in tree_files) {
         if(length(nd_tips) == 1) {
           map_obj[[txid]][["nid"]] <- nd_tips
         } else {
-          mtch_scrs <- vector(length=length(tree_kids))
-          for(j in 1:length(tree_kids)) {
-            mtch_scrs[j] <- (sum(nd_tips %in% tree_kids[[j]])/length(nd_tips)) +
-              (sum(tree_kids[[j]] %in% nd_tips)/length(tree_kids[[j]]))
-          }
+          mtch_scrs <- getMtchScrs(nd_kids, nd_tips)
           if(max(mtch_scrs) > 1) {
             bst_mtch <- which.max(mtch_scrs)[1]
             map_obj[[txid]][["nid"]] <- nids[bst_mtch]
