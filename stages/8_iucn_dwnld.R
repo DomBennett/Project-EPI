@@ -84,7 +84,8 @@ for(grp in grps) {
     res <- list()
     for(nm in nms) {
       nrrtv <- getIUCNNrrtv(nm, token)
-      if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0) {
+      if(class(nrrtv) == "list" && length(nrrtv[['result']]) > 0 &&
+         !is.null(nrrtv[['result']][[1]][['habitat']])) {
         nrrtv <- nrrtv[['result']][[1]][['habitat']]
         res[[nm]] <- gsub("<.*?>", "", nrrtv)  # remove html tags
       }
