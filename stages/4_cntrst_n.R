@@ -149,6 +149,7 @@ cnddts <- vector(length=length(txids))
 for(i in 1:length(txids)) {
   cn <- node_obj[[txids[i]]][['cntrst_n']]
   prid <- node_obj[[txids[i]]][['prid']]
+  sstrs <- node_obj[[txids[i]]][['sstr']]
   if(prid %in% txids) {
     prnt_n <- length(node_obj[[prid]][['kids']])
   }
