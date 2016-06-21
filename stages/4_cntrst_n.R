@@ -155,7 +155,7 @@ for(i in 1:length(txids)) {
   }
   bool <- (!is.null(cn) && cn < max_cntrst_n) &
     (prnt_n > min_prnt_n | !prid %in% txids) &
-    (length(sstrs) > max_nsstrs)
+    (length(sstrs) < max_nsstrs)
   if(bool) {
     cnddts[i] <- TRUE
   }
