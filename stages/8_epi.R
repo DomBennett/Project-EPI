@@ -36,8 +36,6 @@ for(i in 1:length(cnddts)) {
     cntrst_ns[i] <- cntrst_n
     ns[i] <- length(node_obj[[cnddts[i]]][['kids']])
     nms[i] <- node_obj[[cnddts[i]]][["nm"]][["scientific name"]]
-  } else {
-    print(node_obj[[cnddts[i]]][["nm"]][["scientific name"]])
   }
   if(!is.null(node_obj[[cnddts[i]]][['ed']])) {
     eds[i] <- node_obj[[cnddts[i]]][['ed']]
