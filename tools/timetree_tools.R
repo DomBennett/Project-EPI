@@ -123,9 +123,6 @@ getTmsplt <- function(txid) {
   sstrs <- node_obj[[txid]][['sstr']]
   tmsplt <- getDivergence(txid, sstrs[1])
   if(length(sstrs) > 1) {
-    if(length(sstrs) > 10) {
-      sstrs <- sample(sstrs, 10)
-    }
     for(j in 2:length(sstrs)) {
       tmp <- getDivergence(txid, sstrs[j])
       # always seek greatest time
