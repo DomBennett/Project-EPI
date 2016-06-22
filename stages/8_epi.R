@@ -10,6 +10,7 @@ source('parameters.R')
 
 # LIBS
 cat("Loading libraries ...\n")
+library(ggplot2)
 source(file.path("tools", "epi_tools.R"))
 source(file.path('tools', 'node_obj_tools.R'))
 
