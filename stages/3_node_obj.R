@@ -27,7 +27,7 @@ cat("Generating node object ....\n")
 node_obj <- new.env()
 for(i in 1:length(nodes_lines)) {
   division_code <- as.numeric(nodes_lines[[i]][5])
-  if(division_code %in% division_codes) {
+  if(!division_code %in% ignr_codes) {
     txid <- gsub('\t', '', nodes_lines[[i]][1])
     prid <- gsub('\t', '', nodes_lines[[i]][2])
     rank <- gsub('\t', '', nodes_lines[[i]][3])
