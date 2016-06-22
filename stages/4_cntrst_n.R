@@ -164,23 +164,5 @@ cnddts <- txids[cnddts]
 cat("Done. [", length(cnddts), "] candidates nodes.\n", sep="")
 save(node_obj, cnddts, file=file.path(output_dir, "res.RData"))
 
-# TOP-10
-cat("And the top 100 NCBI contrast N nodes are....\n")
-cntrst_ns <- lapply(cnddts, function(x) node_obj[[x]][['cntrst_n']])
-bool <- unlist(lapply(cntrst_ns, function(x) is.null(x)))
-cntrst_ns <- unlist(cntrst_ns)
-nms <- unlist(lapply(cnddts[!bool], function(x) node_obj[[x]][['nm']][['scientific name']]))
-rnks <- unlist(lapply(cnddts[!bool], function(x) node_obj[[x]][['rank']]))
-ordrd <- order(cntrst_ns)[1:100]
-cc <- 1
-for(i in ordrd) {
-  nm <- paste0(nms[i], ' (', rnks[i], ')')
-  cn <- cntrst_ns[i]
-  spcr1 <- paste0(rep(' ', 3 - nchar(cc)), collapse="")
-  spcr2 <- paste0(rep(' ', 40 - nchar(nm)), collapse="")
-  cat(spcr1, cc, ' | ', nm, spcr2, signif(cn, 3), "\n")
-  cc <- cc + 1
-}
-
 # END
 cat(paste0('\nStage `contrast N` finished at [', Sys.time(), ']\n'))
