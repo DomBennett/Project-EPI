@@ -22,7 +22,7 @@ if(parallel) {
 # 9	 |	VRL	|	Viruses
 # 10 |	VRT	|	Vertebrates
 # 11 |	ENV	|	Environmental samples
-ignr_codes <- c(0, 1, 3, 7, 8, 9, 11, 4)
+ignr_codes <- c(0, 3, 7, 8, 9, 11)
 
 # ANALYSIS GROUPS
 # which taxonomic groups will be grouped for analysis?
