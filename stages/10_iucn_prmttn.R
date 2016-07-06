@@ -121,11 +121,11 @@ for(iucn_file in iucn_files) {
   
   # DESCRIPTION DIFFERENCE
   cat('    Testing description difference ....')
-  lf_dsts <- plyr::mdply(.data=data.frame(i=1:nitrtns),
+  lf_dsts <- plyr::mdply(.data=data.frame(i=1:length(lf_dscrptn)),
                          .fun=function(i){
                            calcStrDst(lf_dscrptn)
                          }, .parallel=TRUE)
-  null_dsts <- plyr::mdply(.data=data.frame(i=1:nitrtns),
+  null_dsts <- plyr::mdply(.data=data.frame(i=1:length(lf_dscrptn)),
                          .fun=function(i){
                            tmp <- unlist(null_dscrptn[[i]])
                            calcStrDst(tmp)
