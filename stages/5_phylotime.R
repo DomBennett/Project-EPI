@@ -37,7 +37,7 @@ for(tree_file in tree_files) {
   txids <- getGrpTxids(txids, grp=grp)
   cnddts <- c(txids, cnddts)
   spp <- getSppTxids(txids)
-  trees <- readTree(file.path(tree_dir, tree_file))
+  trees <- readTree(file.path(tree_dir, tree_file), .parallel=TRUE)
   cat("    Done.\n")
   if(class(trees) == "TreeMan") {
     ntrees <- 1
