@@ -28,6 +28,7 @@ load(input_file)
 
 # GENERATE EPI DATAFRAME
 cat("Generating EPI dataframe.... ")
+cnddts <- cnddts[!duplicated(cnddts)]
 nms <- tmsplts <- cntrst_ns <- cntrst_chngs <- chngs <- eds <- ns <- rep(NA, length(cnddts))
 for(i in 1:length(cnddts)) {
   tmsplt <- node_obj[[cnddts[i]]][["tmsplt"]]
