@@ -37,7 +37,8 @@ for(tree_file in tree_files) {
   txids <- getGrpTxids(txids, grp=grp)
   cnddts <- c(txids, cnddts)
   spp <- getSppTxids(txids)
-  trees <- readTree(file.path(tree_dir, tree_file), .parallel=TRUE)
+  trees <- readTree(file.path(tree_dir, tree_file),
+                    parallel=TRUE, update=TRUE)
   cat("    Done.\n")
   if(class(trees) == "TreeMan") {
     ntrees <- 1
@@ -92,22 +93,23 @@ for(tree_file in tree_files) {
     }
     
     # FIND PD, ED, PE AND AGE FOR EVERY NODE
-    ed_vals <- calcFrPrp(tree, tids=tree['tips'], .parallel=TRUE)
+    ed_vals <- calcFrPrp(tree, tids=tree['tips'], parallel=TRUE)
+    tree_age <- tree['age']
     mtxids <- names(map_obj)
     for(txid in mtxids) {
       nid <- map_obj[[txid]][['nid']]
-      if(nid == "n1") {  # this is the root
+      if(nid == tree['root']) {  # this is the root
         next
       }
       sid <- getNdSstr(tree, id=nid)[1]
-      age <- getNdAge(tree, id=nid)
+      age <- getNdAge(tree, id=nid, tree_age)
       kids <- getNdKids(tree, nid)
       ed <- mean(ed_vals[which(tps %in% kids)])
       kids <- getNdKids(tree, sid)
       sstr_ed <- mean(ed_vals[which(tps %in% kids)])
       spn <- getNdSlt(tree, slt_nm="spn", id=nid)
       sstr_spn <- getNdSlt(tree, slt_nm="spn", id=sid)
-      pd <- getNdSlt(tree, slt_nm="pd", id=nid)
+      pd <- getNdPD(tree, id=nid)
       sstr_pd <- getNdSlt(tree, slt_nm="pd", id=sid)
       assgnWMean(val=ed, nm="ed")
       assgnWMean(val=ed/sstr_ed, nm="cntrst_ed")
