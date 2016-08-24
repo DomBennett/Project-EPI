@@ -1,5 +1,7 @@
 # CALCULATE EPIS FROM NODE_OBJ
-# TODO: why so few for things other than birds and mammals?
+# TODO: add taxonomic group
+# TODO: add ranks
+
 
 # START
 cat(paste0('\nStage `epi` started at [', Sys.time(), ']\n'))
