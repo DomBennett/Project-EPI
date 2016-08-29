@@ -28,3 +28,21 @@ EPIChecker <- function (metrics, cut) {
   abline (v = cutoff, col = "red", lwd = 2)
   text (labels = '<-- Living fossils', x=cutoff, y=nrow(metrics)/100, cex = 0.8)
 }
+
+plotEPI <- function(epi, n=20) {
+  ordrd_top <- order(epi[['pepi']])[1:n]
+  val <- c(epi[['pepi']][ordrd_top],
+           epi[['epi']][ordrd_top],
+           epi[['ed']][ordrd_top])
+  type <- rep(c('pEPI', 'EPI', 'ED'), each=length(ordrd_top))
+  nms <- epi[['nm']][ordrd_top]
+  nm <- rep(nms, 3)
+  nm <- factor(nm, levels=nms[length(nms):1])
+  p_data <- data.frame(nm, val, type)
+  p <- ggplot(data=p_data, aes(x=nm, y=val, colour=type)) +
+    geom_point() +
+    coord_flip() +
+    scale_y_reverse() +
+    xlab("") + ylab("")
+  p
+}

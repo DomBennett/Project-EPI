@@ -74,6 +74,8 @@ epi$pepi <- log(epi[['cntrst_n']] / epi[['tmsplt']])
 cat("Done.\n")
 
 # PLOTS
+plotEPI(epi, n=25)
+
 pdf(file.path(output_dir, "res.pdf"))
 ggplot(data=epi, aes(x=log(tmsplt), y=log(cntrst_n), colour=pepi)) +
   geom_point() + theme_bw()
@@ -83,19 +85,15 @@ ggplot(data=epi, aes(x=pepi, y=chng)) +
   geom_point() + theme_bw()
 dev.off()
 
-# WORKOUT PROPORTIONS
-cat("Proportions of clades with EPI....\n")
+# ADDING TAXONOMIC INFO
 txids <- ls(node_obj)
+epi$txnmcgrp <- NA
 mmls <- getGrpTxids(txids, "mammals")
+epi$txnmcgrp[epi$txid %in% mmls] <- 'mammal'
 brds <- getGrpTxids(txids, "birds")
+epi$txnmcgrp[epi$txid %in% brds] <- 'bird'
 lpdsrs <- getGrpTxids(txids, "lepidosaurs")
-nlpdsrs <- sum(lpdsrs %in% epi[['txid']])
-nmmls <- sum(mmls %in% epi[['txid']])
-nbrds <- sum(brds %in% epi[['txid']])
-nrst <- nrow(epi) - (nmmls + nbrds)
-cat("-- [", nmmls, "] mammals\n", sep="")
-cat("-- [", nbrds, "] birds\n", sep="")
-cat("-- [", nrst, "] rest\n", sep="")
+epi$txnmcgrp[epi$txid %in% lpdsrs] <- 'lepidosaur'
 
 # OUTPUT
 cat("Outputting ... ")
