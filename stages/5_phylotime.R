@@ -45,7 +45,7 @@ for(tree_file in tree_files) {
   cat("    Main loop....\n")
   for(i in 1:ntrees) {
     iPrnt(i, ntrees)
-    tree <- getTree(tree_file, i)
+    tree <- getTree(i, tree_file)
     
     # MATCH TIPS TO NMS
     map_obj <- list()
