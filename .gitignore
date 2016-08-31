@@ -25,3 +25,6 @@ caches/
 *.tre
 *.pdf
 *token*
+
+# Mac
+.DS_Store

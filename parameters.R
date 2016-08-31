@@ -4,7 +4,7 @@
 parallel <- TRUE  # Won't work for Windows
 if(parallel) {
   library(doMC)
-  ncps <- detectCores()
+  ncps <- detectCores() - 1
   registerDoMC(cores=ncps)
 }
 
