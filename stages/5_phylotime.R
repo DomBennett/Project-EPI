@@ -24,34 +24,28 @@ dst_mtrx_dir <- file.path('1_wrngl')
 
 # INPUT
 load(input_file)
-tree_files <- list.files(tree_dir)
+tree_files <- list.files(tree_dir, pattern='.RData')
+tree_files <- file.path(tree_dir, tree_files)
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")
 top_cnddts <- cnddts
 for(tree_file in tree_files) {
   # INPUT
-  grp <- sub("\\.tre", "", tree_file)
+  grp <- sub("\\.RData", "", tree_file)
+  grp <- sub(tree_dir, "", grp)
   cat('    Reading in [', grp, '] ....\n', sep="")
   txids <- ls(node_obj)
   txids <- getGrpTxids(txids, grp=grp)
   cnddts <- c(txids, cnddts)
   spp <- getSppTxids(txids)
-  trees <- readTree(file.path(tree_dir, tree_file),
-                    parallel=TRUE, update=FALSE)
-  cat("    Done.\n")
-  if(class(trees) == "TreeMan") {
-    ntrees <- 1
-    trees <- list(trees)
-  } else {
-    ntrees <- trees['ntrees']
-  }
+  ntrees <- getNtrees(tree_file)
   
   # MAIN LOOP
   cat("    Main loop....\n")
   for(i in 1:ntrees) {
     iPrnt(i, ntrees)
-    tree <- trees[[i]]
+    tree <- getTree(tree_file, i)
     
     # MATCH TIPS TO NMS
     map_obj <- list()
