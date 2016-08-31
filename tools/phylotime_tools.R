@@ -30,3 +30,23 @@ getNtrees <- function(tree_file) {
   }
   trees['ntrees']
 }
+
+calcFrPrp2 <- function(tree, tids, progress="none") {
+  # treeman function without bigmemory
+  .calc <- function(i) {
+    id <- tree@all[i]
+    spn <- getNdSlt(tree, "spn", id)
+    kids <- getNdKids(tree, id)
+    if(length(kids) == 0) {
+      spn_shres[i, id] <<- spn
+    } else {
+      spn_shre <- spn/length(kids)
+      spn_shres[i, kids] <<- spn_shre
+    }
+  }
+  spn_shres <- matrix(0, ncol=tree@ntips, nrow=tree@nall)
+  colnames(spn_shres) <- tree@tips
+  plyr::m_ply(.data=data.frame(i=1:tree@nall), .fun = .calc,
+              .progress=progress)
+  colSums(spn_shres[, tids])
+}
