@@ -87,7 +87,7 @@ for(tree_file in tree_files) {
     }
     
     # FIND PD, ED, PE AND AGE FOR EVERY NODE
-    ed_vals <- calcFrPrp(tree, tids=tree['tips'], parallel=TRUE)
+    ed_vals <- calcFrPrp(tree, tids=tree['tips'])
     tree_age <- tree['age']
     mtxids <- names(map_obj)
     for(txid in mtxids) {
