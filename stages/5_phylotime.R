@@ -34,7 +34,7 @@ for(tree_file in tree_files) {
   # INPUT
   grp <- sub("\\.RData", "", tree_file)
   grp <- sub(tree_dir, "", grp)
-  cat('    Reading in [', grp, '] ....\n', sep="")
+  cat('    Working on [', grp, '] ....\n', sep="")
   txids <- ls(node_obj)
   txids <- getGrpTxids(txids, grp=grp)
   cnddts <- c(txids, cnddts)
