@@ -14,34 +14,16 @@ source(file.path('tools', 'clade_matching_tools.R'))
 source(file.path('tools', 'i_tools.R'))
 
 # DIRS
-outdir <- '5_phylotime'
+outdir <- '6_phylotime'
 if(!file.exists(outdir)) {
   dir.create(outdir)
 }
 tree_dir <- file.path("0_data", "trees")
-input_file <- file.path("4_cntrst_n", "res.RData")
+input_file <- file.path("5_split", "res.RData")
 
 # INPUT
 load(input_file)
 tree_files <- list.files(tree_dir, pattern='.RData')
-
-# SPLIT NODE_OBJ
-# split node_obj into one with phylo estiamtes and one without
-cat("Splitting node_obj to save memory ....\n")
-txids <- ls(node_obj)
-ph_txids <- NULL
-for(tree_file in tree_files) {
-  grp <- sub("\\.RData", "", tree_file)
-  ph_txids <- c(ph_txids, getGrpTxids(txids, grp=grp))
-}
-ph_obj <- new.env()
-for(txid in ph_txids) {
-  ph_obj[[txid]] <- node_obj[[txid]]
-}
-rm(list=ph_txids, envir=node_obj)
-save(node_obj, file=file.path(outdir, 'node_obj.RData'))
-rm(node_obj)
-cat('Done.\n')
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")

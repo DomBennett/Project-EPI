@@ -1,5 +1,4 @@
 # CALCULATE EPIS FROM NODE_OBJ
-# TODO: add taxonomic group
 # TODO: add ranks
 
 
