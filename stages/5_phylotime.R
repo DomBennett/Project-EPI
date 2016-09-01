@@ -14,30 +14,42 @@ source(file.path('tools', 'clade_matching_tools.R'))
 source(file.path('tools', 'i_tools.R'))
 
 # DIRS
-if(!file.exists('5_phylotime')) {
-  dir.create('5_phylotime')
+outdir <- '5_phylotime'
+if(!file.exists(outdir)) {
+  dir.create(outdir)
 }
 tree_dir <- file.path("0_data", "trees")
 input_file <- file.path("4_cntrst_n", "res.RData")
-output_file <- file.path('5_phylotime', 'res.RData')
-dst_mtrx_dir <- file.path('1_wrngl')
 
 # INPUT
 load(input_file)
 tree_files <- list.files(tree_dir, pattern='.RData')
-tree_files <- file.path(tree_dir, tree_files)
+
+# SPLIT NODE_OBJ
+# split node_obj into one with phylo estiamtes and one without
+cat("Splitting node_obj to save memory ....\n")
+txids <- ls(node_obj)
+ph_txids <- NULL
+for(tree_file in tree_files) {
+  grp <- sub("\\.RData", "", tree_file)
+  ph_txids <- c(ph_txids, getGrpTxids(txids, grp=grp))
+}
+ph_obj <- new.env()
+for(txid in ph_txids) {
+  ph_obj[[txid]] <- node_obj[[txid]]
+}
+rm(list=ph_txids, envir=node_obj)
+save(node_obj, file=file.path(outdir, 'node_obj.RData'))
+rm(node_obj)
+cat('Done.\n')
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees ....\n")
-top_cnddts <- cnddts
 for(tree_file in tree_files) {
   # INPUT
   grp <- sub("\\.RData", "", tree_file)
-  grp <- sub(tree_dir, "", grp)
   cat('    Working on [', grp, '] ....\n', sep="")
-  txids <- ls(node_obj)
-  txids <- getGrpTxids(txids, grp=grp)
-  cnddts <- c(txids, cnddts)
+  load(file.path(outdir, tree_file))
   spp <- getSppTxids(txids)
   ntrees <- getNtrees(tree_file)
   
@@ -52,9 +64,9 @@ for(tree_file in tree_files) {
     mtch_tps <- gsub("_", " ", tree['tips'])
     tps <- tree['tips']
     for(sp in spp) {
-      bool <- node_obj[[sp]][['nm']] %in% mtch_tps
+      bool <- prt_obj[[sp]][['nm']] %in% mtch_tps
       if(any(bool)) {
-        map_obj[[sp]][['nid']] <- tps[mtch_tps == node_obj[[sp]][['nm']][bool][1]]
+        map_obj[[sp]][['nid']] <- tps[mtch_tps == prt_obj[[sp]][['nm']][bool][1]]
       }
     }
     
@@ -62,7 +74,7 @@ for(tree_file in tree_files) {
     nids <- tree['nds']
     tree_kids <- getNdsKids(tree, ids=nids)
     for(txid in txids) {
-      nd_kids <- node_obj[[txid]][['kids']]
+      nd_kids <- prt_obj[[txid]][['kids']]
       if(nd_kids[1] != "none") {
         nd_tips <- vector(length=length(nd_kids))
         for(j in 1:length(nd_kids)) {
@@ -121,7 +133,7 @@ cat("Done.\n")
 
 # OUTPUT
 cat('Saving .... ')
-save(node_obj, top_cnddts, cnddts, file=output_file)
+save(ph_obj, file=file.path(outdir, 'ph_obj.RData'))
 cat('Done.\n')
 
 # END

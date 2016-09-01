@@ -14,7 +14,7 @@ getTree <- function(i, tree_file) {
   # looks up ith tree in tree_file
   # trees are saved as RData to save processing
   # if tree is not updated, tree is updated
-  load(file=tree_file)
+  load(file=file.path(tree_dir, tree_file))
   if('tree' %in% ls()) {
     return(tree)
   }
@@ -24,7 +24,7 @@ getTree <- function(i, tree_file) {
 }
 
 getNtrees <- function(tree_file) {
-  load(file=tree_file)
+  load(file=file.path(tree_dir, tree_file))
   if('tree' %in% ls()) {
     return(1)
   }
