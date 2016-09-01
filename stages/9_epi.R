@@ -16,8 +16,8 @@ source(file.path("tools", "epi_tools.R"))
 source(file.path('tools', 'node_obj_tools.R'))
 
 # DIRS
-input_dir <- "7_cntrst_chng"
-output_dir <- '8_epi'
+input_dir <- "8_cntrst_chng"
+output_dir <- '9_epi'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
@@ -27,12 +27,30 @@ input_file <- file.path(input_dir, "res.RData")
 # INPUT
 load(input_file)
 
+# GET SSTR CANDIDATES
+# ensure sisters are accounted for in order to test autocorrelation
+cnddts <- cnddts[!duplicated(cnddts)]
+cnddts <- unique(unlist(sapply(cnddts,
+                               function(x) c(x, node_obj[[x]][['sstr']]))))
+
 # GENERATE EPI DATAFRAME
 cat("Generating EPI dataframe.... ")
-cnddts <- cnddts[!duplicated(cnddts)]
 nms <- tmsplts <- cntrst_ns <- cntrst_chngs <- chngs <- eds <- ns <- rep(NA, length(cnddts))
 for(i in 1:length(cnddts)) {
   tmsplt <- node_obj[[cnddts[i]]][["tmsplt"]]
+  # if no tmsplt, use sstrs
+  if(is.null(tmsplt)) {
+    sstrs <- node_obj[[cnddts[i]]][['sstr']]
+    if(length(sstrs) > 0) {
+      sstr_tmsplts <- sapply(sstrs, function(x) {
+        res <- NA
+        if(!is.null(node_obj[[x]][['tmsplt']])) {
+          res <- node_obj[[x]][['tmsplt']]
+        }
+        res})
+      tmsplt <- mean(sstr_tmsplts, na.rm=TRUE)
+    }
+  }
   cntrst_n <- node_obj[[cnddts[i]]][["cntrst_n"]]
   if(!is.null(tmsplt) & !is.null(cntrst_n)) {
     tmsplts[i] <- tmsplt
