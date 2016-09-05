@@ -82,6 +82,7 @@ for(tree_file in tree_files) {
         }
       }
     }
+    rm(tree_kids)
     
     # FIND PD, ED, PE AND AGE FOR EVERY NODE
     ed_vals <- calcFrPrp2(tree, tids=tree['tips'])
@@ -112,6 +113,7 @@ for(tree_file in tree_files) {
       assgnWMean(val=age, nm="age")
       assgnWMean(val=spn + age, nm="tmsplt")
     }
+    rm(ed_vals)
   }
 }
 cat("Done.\n")
