@@ -10,19 +10,23 @@ source('parameters.R')
 source(file.path('tools', 'timetree_tools.R'))
 
 # DIRS
-if(!file.exists('6_timetree')) {
-  dir.create('6_timetree')
+if(!file.exists('7_timetree')) {
+  dir.create('7_timetree')
 }
 input_file <- file.path("5_split", "tt_obj.RData")
-output_file <- file.path('6_timetree', 'res.RData')
+output_file <- file.path('7_timetree', 'res.RData')
 
 # INPUT
 load(input_file)
+node_obj <- tt_obj
+rm(tt_obj)
 
 # LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree ....\n')
+txids <- ls(node_obj)
+cnddts <- cnddts[cnddts %in% txids]
 cc <- 0
-for(txid in top_cnddts) {
+for(txid in cnddts) {
   if('tmsplt' %in% names(node_obj[[txid]])) {
     cc <- cc + 1
     next
@@ -40,7 +44,7 @@ cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")
 
 # OUTPUT
 cat('Saving ....\n')
-save(node_obj, top_cnddts, cnddts, file=output_file)
+save(node_obj, cnddts, file=output_file)
 cat('Done.\n')
 
 # END
