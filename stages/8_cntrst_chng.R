@@ -90,7 +90,7 @@ for(chng_fl in chng_fls) {
 
 # OUTPUT
 cat("Outputting ...\n")
-save(node_obj, cnddts, file=output_file)
+save(node_obj, file=output_file)
 
 # END
 cat(paste0('\nStage `contrast change` finished at [', Sys.time(), ']\n'))
