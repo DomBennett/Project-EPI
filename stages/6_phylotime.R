@@ -96,9 +96,17 @@ for(tree_file in tree_files) {
       sid <- getNdSstr(tree, id=nid)[1]
       age <- getNdAge(tree, id=nid, tree_age)
       kids <- getNdKids(tree, nid)
-      ed <- mean(ed_vals[which(tps %in% kids)])
+      if(length(kids) > 0) {
+        ed <- mean(ed_vals[which(tps %in% kids)])
+      } else {
+        ed <- ed_vals[[nid]]
+      }
       kids <- getNdKids(tree, sid)
-      sstr_ed <- mean(ed_vals[which(tps %in% kids)])
+      if(length(kids) > 0) {
+        sstr_ed <- mean(ed_vals[which(tps %in% kids)])
+      } else {
+        sstr_ed <- ed_vals[[sid]]
+      }
       spn <- getNdSlt(tree, slt_nm="spn", id=nid)
       sstr_spn <- getNdSlt(tree, slt_nm="spn", id=sid)
       pd <- getNdPD(tree, id=nid)
