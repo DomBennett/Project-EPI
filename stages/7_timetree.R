@@ -13,7 +13,7 @@ source(file.path('tools', 'timetree_tools.R'))
 if(!file.exists('6_timetree')) {
   dir.create('6_timetree')
 }
-input_file <- file.path("5_phylotime", "res.RData")
+input_file <- file.path("5_split", "tt_obj.RData")
 output_file <- file.path('6_timetree', 'res.RData')
 
 # INPUT

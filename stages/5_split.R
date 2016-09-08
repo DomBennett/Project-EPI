@@ -36,7 +36,7 @@ for(txid in ph_txids) {
 cat(".... outputting\n")
 rm(list=ph_txids, envir=node_obj)
 tt_obj <- node_obj
-save(tt_obj, file=file.path(outdir, 'tt_obj.RData'))
+save(tt_obj, cnddts, file=file.path(outdir, 'tt_obj.RData'))
 save(ph_obj, file=file.path(outdir, 'ph_obj.RData'))
 cat('Done.\n')
 
