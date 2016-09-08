@@ -14,13 +14,13 @@ source(file.path('tools', 'clade_matching_tools.R'))
 
 # DIRS
 chng_dir <- "2_chng"
-tt_dir <- "6_timetree"
-output_dir <- '7_cntrst_chng'
+ph_dir <- "6_phylotime"
+output_dir <- '8_cntrst_chng'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
 }
 output_file <- file.path(output_dir, "res.RData")
-input_file <- file.path(tt_dir, "res.RData")
+input_file <- file.path(ph_dir, "ph_obj.RData")
 load(input_file)
 
 # CHANGE
