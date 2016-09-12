@@ -1,80 +1,4 @@
 
-calcMeanCladeChange <- function(tree, clades_phylo, echanges) {
-  # Add mean changes per clade to clades_phylo
-  clades_phylo[['chng']] <- vector(length=length(clades_phylo[['clade.node']]))
-  rtnd <- length(tree$tip.label) + 1
-  for(i in 1:length(clades_phylo[['clade.node']])) {
-    nd <- clades_phylo[['clade.node']][[i]]
-    edgs <- MoreTreeTools::getEdges(tree, node=nd)
-    if(nd != rtnd) {
-      edgs <- c(edgs, which(tree$edge[ ,2] == nd))
-    }
-    clades_phylo[['chng']][i] <- mean(echanges[edgs], na.rm=TRUE)
-  }
-  clades_phylo
-}
-
-rmvMssg <- function(dt, prp=0.5) {
-  # Remove missing values from a matrix iteratively
-  # Aim for resulting matrix to be square
-  # prp: the permessible proportion of data points that are not NA
-  while(TRUE) {
-    csums <- colSums(!is.na(dt))
-    rsums <- rowSums(!is.na(dt))
-    mean_present <- mean(csums/nrow(dt))
-    if(mean_present >= prp) {
-      break
-    }
-    if(ncol(dt) > nrow(dt)) {
-      dt <- dt[ ,csums > min(csums)]
-    } else {
-      dt <- dt[rsums > min(rsums), ]
-    }
-    cvars <- apply(dt, MARGIN=2, FUN=var, na.rm=TRUE)
-    dt <- dt[ ,cvars != 0]
-  }
-  dt
-}
-
-reduceChrctrMtrx <- function(chars) {
-  # Reduce a character matrix to independent componenets using PCA
-  # Requires a character matrix, returns characters binned using Sturges' method.
-  # Can only perform PCA on a full dataset, removes species and characters not
-  # representing the maximum.
-  # 
-  # Args:
-  #  chars: matrix of characters with species names as rows
-  #
-  # Returns:
-  #  character matrix
-  tmp_chars <- matrix(NA, nrow=nrow(chars),
-                      ncol=ncol(chars))
-  rownames(tmp_chars) <- rownames(chars)
-  for(i in 1:ncol(chars)) {
-    # convert non-numeric to numbers
-    if(any(tolower(chars[ ,i]) %in% letters)) {
-      tmp <- tolower(chars[ ,i])
-      chars[ ,i] <- match(tmp, letters)
-    }
-    tmp_chars[,i] <- as.numeric(chars[,i])
-  }
-  tmp_chars <- rmvMssg(tmp_chars, prp=1)
-  res <- prcomp(tmp_chars)
-  prop.var <- round(sapply(res$sdev^2,
-                           function(x) Reduce('+', x)/sum(res$sdev^2)), 3)
-  pull <- cumsum(prop.var) < 1
-  crds <- res$x[ ,pull]
-  new_chars <- matrix(NA, nrow=nrow(chars),
-                      ncol=ncol(crds))
-  rownames(new_chars) <- rownames(chars)
-  pull <- match(rownames(crds), rownames(new_chars))
-  for(i in 1:ncol(crds)) {
-    n <- nclass.Sturges(crds[ ,i])
-    new_chars[pull, i] <- as.numeric(cut(crds[ ,i], n))
-  }
-  new_chars
-}
-
 matchClades <- function(q.clade.node, s.clade.node) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.
@@ -167,6 +91,8 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
     r.clade.node <- MoreTreeTools::getClades(r.phylo)
     r.nodes <- r.clade.node[[2]]
     r.res <- plyr::mdply(data.frame(r.node = r.nodes), calcEachRPhyloEdge)
+    # NAs introduced by root
+    r.res <- r.res[!is.na(r.res[ ,2]), ]
     names(r.res)[2] <- "change"
     matching.f.nodes <- matchClades(r.clade.node, f.clade.node)
     res <- mapOnFPhylo(r.res, matching.f.nodes, weight.by.edge = TRUE)
@@ -175,13 +101,9 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   f.clade.node <- MoreTreeTools::getClades(f.phylo)
   f.clades <- f.clade.node[[1]]
   f.nodes <- f.clade.node[[2]]
-  res <- plyr::ldply(.data = reconstruction.obj, .fun = calcEachRPhylo,
+  res <- plyr::llply(.data = reconstruction.obj, .fun = calcEachRPhylo,
                .parallel=parallel)
-  # Calculate mean change for each edge across all chars
-  edge.changes <- plyr::ddply(.data=res, .variables=plyr:::.(f.node),
-                              .fun=plyr::summarize, mean.change=mean(change),
-                              n=length(change), .parallel=parallel)
-  edge.changes$mean.change[match(f.phylo$edge[ ,2], edge.changes$f.node)]
+  res
 }
 
 parsimonyReconstruction <- function(chars, phylo, order.numeric = TRUE,
@@ -296,4 +218,28 @@ addOutgroup <- function(phylo, outgroup.factor = 100) {
   res <- bind.tree(tip, phylo, where = 2)
   res <- reorder.phylo(res, order = "cladewise")
   return(res)
+}
+
+changesByNode <- function(nds, changes, parallel) {
+  # loop through nd indexes and pull out change
+  # by character from "changes"
+  # Args:
+  #  nds: indexes of nodes in tree, derived from clades_phylo
+  #  changes: changes by node for each character, derived from calcChange
+  #  parallel: bool, plyr parallelisation
+  # Returns
+  #  list of change by character for each node, NA if no info for character
+  #   order is same as the character order in changes.
+  getChangesByNode <- function(nd) {
+    getChange <- function(char) {
+      if(nd %in% char[['f.phylo']]) {
+        return(char[['change']][char[['f.phylo']] == nd])
+      }
+      NA
+    }
+    sapply(changes, getChange)
+  }
+  res <- plyr::mlply(nds, .fun=getChangesByNode, .parallel=parallel)
+  res <- res[1:length(res)]
+  res
 }

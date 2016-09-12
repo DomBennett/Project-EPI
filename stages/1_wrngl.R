@@ -20,6 +20,7 @@ cat('Working on mammals ....\n')
 data <- read.delim(file.path(chars_dir, "panTHERIA.txt"), na.strings = -999,
                     stringsAsFactors = FALSE)
 pantheria <- data[ ,- c(1:5,36:55)]
+# split continuous variables into categories of 10
 for(i in 1:ncol(pantheria)) {
   temp.chars <- pantheria[!is.na(pantheria[ , i]),i]
   if(length(unique(temp.chars)) > 10) {
@@ -30,12 +31,24 @@ rownames(pantheria) <- data[ ,"MSW93_Binomial"]
 rownames(pantheria) <- sub(" ", "_", rownames(pantheria))
 file <- "morpho_matrix_forR.nex"
 oleary <- readNexusData(file.path(chars_dir, file))
-chars <- merge(oleary, pantheria, by = 0, all = TRUE)
-rownames(chars) <- c(rownames(oleary) [!rownames(oleary) %in% rownames(pantheria)], rownames(pantheria))
-tree <- read.tree(file.path(tree_dir, "bininda_mammalia.tre"))
+char_names <- c(rownames(pantheria), rownames(oleary))
+char_names <- sort(unique(char_names))
+chars <- matrix(NA, nrow=length(char_names), ncol=ncol(oleary)+ncol(pantheria))
+rownames(chars) <- char_names
+mis <- match(rownames(pantheria), char_names)
+for(i in 1:ncol(pantheria)) {
+  chars[mis, i] <- pantheria[ ,i]
+}
+n <- ncol(pantheria) + 1
+mis <- match(rownames(oleary), char_names)
+cc <- 1
+for(i in n:(ncol(oleary) + ncol(pantheria))) {
+  chars[mis, i] <- oleary[ ,cc]
+  cc <- cc + 1
+}
+tree <- read.tree(file.path(tree_dir, "mammals.tre"))
 chars <- chars[rownames(chars) %in% tree$tip.label, ]
-clades_phylo <- MoreTreeTools::getClades(tree)
-data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
+data <- list(tree=tree, chars=chars)
 save(data, file=file.path(output_dir, "mammals.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 

@@ -31,34 +31,41 @@ for(phychr_file in phychr_files) {
   load(file.path(input_dir, phychr_file))
   tree <- data[["tree"]]
   chars <- data[["chars"]]
-  clades_phylo <- data[['clades_phylo']]
   rm(data)
   nspp <- sum(rowSums(!is.na(chars)) > 0)
   cat("Done, found character matrix of [", ncol(chars),
       "] characters and [", nspp, '/', length(tree$tip.label),
       '] tips\n', sep="")
   
-  cat("    Reducing character matrix .... ")
-  chars <- reduceChrctrMtrx(chars)
+  cat('Preparing character matrix....')
+  # do any have fewer than 10 species?
+  chars <- chars[ ,colSums(!is.na(chars)) > 10]
+  # do any have only 1 unique character?
+  nuchars <- apply(chars, 2, function(x) length(unique(x)))
+  pull <- nuchars > 1
+  chars <- chars[ ,pull]
   nspp <- sum(rowSums(!is.na(chars)) > 0)
   cat('Done, found [', ncol(chars), '] characters for [', 
       nspp, '/', length(tree$tip.label), '] tips\n', sep="")
   
   cat("    Estimating ancestral node states with parsimony .... ")
+  # requires categorical variables
   reconstruction_obj <- parsimonyReconstruction(chars, tree)
   cat('Done\n')
   
-  cat("    Calculating edge changes .... ")
-  echanges <- calcChange(tree, reconstruction_obj, parallel=TRUE)
+  cat("    Calculating n. changes .... ")
+  changes <- calcChange(tree, reconstruction_obj, parallel=TRUE)
   cat('Done\n')
   
-  cat("    Calculate mean change per clade .... ")
-  clades_phylo <- calcMeanCladeChange(tree, clades_phylo, echanges)
-  nds_wchrs <- sum(clades_phylo[['chng']] > 0, na.rm=TRUE)
-  cat("Done, [", nds_wchrs, "] nodes with mean change.\n", sep="")
+  cat("    Calculating clades_change obj .... ")
+  clades_phylo <- MoreTreeTools::getClades(tree)
+  changes_by_node <- changesByNode(nds=clades_phylo[['clade.node']],
+                                   changes, parallel=TRUE)
+  clades_phylo$changes <- changes_by_node
+  clades_change <- clades_phylo
   
   cat("    Outputting ... ")
-  save(clades_phylo, file=file.path(output_dir, phychr_file))
+  save(clades_change, file=file.path(output_dir, phychr_file))
   cat("Done.\n")
 }
 
