@@ -79,7 +79,7 @@ lislevand <- lislevand[, pull]
 livezy <- livezy[rownames(livezy) %in% genus_nms, ]
 mtchd <- match(genus_nms, rownames(livezy))
 chars <- cbind(lislevand, livezy[mtchd, ])
-trees <- read.tree(file.path(tree_dir, 'jetz_aves.tre'))
+trees <- read.tree(file.path(tree_dir, 'birds.tre'))
 tree <- consensus(trees)  # strict consensus tree
 rownames(chars) <- gsub(" ", "_", rownames(chars))
 chars <- chars[rownames(chars) %in% tree$tip.label,]
@@ -88,9 +88,15 @@ mssng_dt <- matrix(NA, ncol=ncol(chars), nrow=length(mssng))
 rownames(mssng_dt) <- mssng
 colnames(mssng_dt) <- colnames(chars)
 chars <- rbind(chars, mssng_dt)  # ensure no tip is missing from chars
+# split continuous variables into categories of 10
+for(i in 1:ncol(chars)) {
+  temp.chars <- chars[!is.na(chars[ , i]),i]
+  if(length(unique(temp.chars)) > 10) {
+    chars[!is.na(chars[ , i]),i] <- cut(temp.chars, 10)
+  }
+}
 tree$edge.length <- rep(1, nrow(tree$edge))
-clades_phylo <- MoreTreeTools::getClades(tree)
-data <- list(tree=tree, chars=chars, clades_phylo=clades_phylo)
+data <- list(tree=tree, chars=chars)
 save(data, file = file.path(output_dir, "birds.RData"))
 prep <- signif(mean(colSums(!is.na(chars)))/length(tree$tip.label), 3)
 cat('Done. Found [', ncol(chars), '] characters each on average representing [', 
