@@ -35,57 +35,66 @@ for(chng_fl in chng_fls) {
   txids_wchng <- NULL
   load(file.path(chng_dir, chng_fl))
   
-  # MATCH SPECIES NAMES
-  cat("    Matching change estimates for species.... ")
-  cp_spp <- unlist(lapply(clades_phylo[['clade.children']],
-                          function(x) length(x) == 1))
-  cp_spp <- which(cp_spp)
-  cp_nms <- unlist(lapply(clades_phylo[['clade.children']][cp_spp],
-                          function(x) gsub("_", " ", x[[1]])))
-  for(i in 1:length(spp)) {
-    txid <- spp[i]
-    nm <- node_obj[[txid]][['nm']][['scientific name']]
-    if(nm %in% cp_nms) {
-      j <- cp_spp[[which(cp_nms == nm)]]
-      node_obj[[txid]][['chng']] <- clades_phylo[['chng']][[j]]
-      txids_wchng <- c(txids_wchng, txid)
-    }
-  }
-  cat("Done.\n")
-  
-  # MATCH KIDS NAMES
-  cat("    Matching change estimates for internal nodes.... ")
-  nids <- txids[!txids %in% spp]
-  cp_nids <- 1:length(clades_phylo[['clade.children']])
-  cp_nids <- cp_nids[!cp_nids %in% cp_spp]
-  cp_kids <- lapply(cp_nids, function(x) gsub("_", " ", clades_phylo[['clade.children']][[x]]))
-  for(i in 1:length(nids)) {
-    txid <- nids[i]
+  # MATCH
+  cat("    Matching change estimates nodes in node_obj.... ")
+  cc_nids <- 1:length(clades_change[['clade.children']])
+  cc_kids <- lapply(cc_nids, function(x) gsub("_", " ",
+                                              clades_change[['clade.children']][[x]]))
+  cc_spp <- which(sapply(cc_kids, length) == 1)
+  cc_spp_nms <- unlist(cc_kids[cc_spp])
+  mtch_indx <- rep(NA, length(cc_nids))
+  for(i in 1:length(txids)) {
+    txid <- txids[i]
     kids <- node_obj[[txid]][['kids']]
-    kids <- unlist(lapply(kids, function(x) node_obj[[x]][['nm']][['scientific name']]))
-    mtch_scrs <- getMtchScrs(kids, cp_kids)
-    if(max(mtch_scrs) > 1) {
-      bst_mtch <- which.max(mtch_scrs)[1]
-      chng <- clades_phylo[['chng']][[cp_nids[bst_mtch]]]
-      node_obj[[txid]][["chng"]] <- chng
-      txids_wchng <- c(txids_wchng, txid)
+    if(length(kids) == 1 && kids == 'none') {
+      nm <- node_obj[[txid]][['nm']][['scientific name']]
+      if(nm %in% cc_spp_nms) {
+        mtch_indx[i] <- cc_spp[cc_spp_nms == nm]
+      }
+    } else {
+      kids <- unlist(lapply(kids, function(x) node_obj[[x]][['nm']][['scientific name']]))
+      mtch_scrs <- getMtchScrs(kids, cc_kids)
+      if(max(mtch_scrs) > 1) {
+        mtch_indx[i] <- which.max(mtch_scrs)[1]
+      }
     }
   }
-  cat("Done.\n")
+  cat("Done. Found [", sum(!is.na(mtch_indx)), "/", length(mtch_indx),
+      '] of clade change estimates in node_obj.\n')
   
-  # CALCULATE CONTRASTS
+  # CALCULATE CNTRST CHNG
   cat("    Calculating contrast change.... ")
-  for(txid in txids_wchng) {
-    sstrs <- node_obj[[txid]][['sstr']]
-    sstr_chng <- NULL
-    for(sstr in sstrs) {
-      sstr_chng <- c(sstr_chng, node_obj[[txid]][['chng']])
+  cntr <- 0
+  txids <- txids[!is.na(mtch_indx)]
+  mtch_indx <- mtch_indx[!is.na(mtch_indx)]
+  for(i in 1:length(txids)) {
+    txid <- txids[i]
+    sstr <- node_obj[[txid]][['sstr']]
+    if(!any(sstr %in% txids)) {
+      next
     }
-    sstr_chng <- mean(sstr_chng, na.rm=TRUE)
-    node_obj[[txid]][['cntrst_chng']] <-
-      node_obj[[txid]][['chng']] / sstr_chng
+    sstr_i <- which(txids %in% sstr)
+    chngs <- clades_change[['changes']][[mtch_indx[i]]]
+    if(all(is.na(chngs))) {
+      next
+    }
+    if(length(sstr_i) == 1) {
+      sstr_chngs <- clades_change[['changes']][[mtch_indx[sstr_i]]]
+    } else {
+      sstr_chngs <- rep(NA, length(chngs))
+      sstr_chngs_list <- lapply(sstr_i,
+                                function(x) clades_change[['changes']][[mtch_indx[x]]])
+      for(j in 1:length(chngs)) {
+        sstr_chngs[j] <- mean(sapply(sstr_chngs_list, function(x) x[j]), na.rm=TRUE)
+      }
+    }
+    cntrst_chngs <- chngs/sstr_chngs
+    cntrst_chngs[sstr_chngs == 0] <- 0 # avoid 0 NaN
+    cntr <- cntr + 1
+    node_obj[[txid]][['cntrst_chng']] <- mean(cntrst_chngs, na.rm=TRUE)
   }
-  cat("Done.\n")
+  cat("Done. Calculated contrast change for [", cntr, '/', length(txids),
+      '] clades.\n')
 }
 
 # OUTPUT

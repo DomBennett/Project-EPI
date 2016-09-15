@@ -37,13 +37,25 @@ for(phychr_file in phychr_files) {
       "] characters and [", nspp, '/', length(tree$tip.label),
       '] tips\n', sep="")
   
-  cat('Preparing character matrix....')
+  cat('    Preparing character matrix....')
   # do any have fewer than 10 species?
   chars <- chars[ ,colSums(!is.na(chars)) > 10]
   # do any have only 1 unique character?
   nuchars <- apply(chars, 2, function(x) length(unique(x)))
   pull <- nuchars > 1
   chars <- chars[ ,pull]
+  # convert non-numeric to numbers
+  tmp_chars <- matrix(NA, nrow=nrow(chars), ncol=ncol(chars))
+  rownames(tmp_chars) <- rownames(chars)
+  for(i in 1:ncol(chars)) {
+    if(any(tolower(chars[ ,i]) %in% letters)) {
+      tmp <- tolower(chars[ ,i])
+      chars[ ,i] <- match(tmp, letters)
+      }
+    tmp_chars[,i] <- as.numeric(chars[,i])
+  }
+  chars <- tmp_chars
+  rm(tmp_chars)
   nspp <- sum(rowSums(!is.na(chars)) > 0)
   cat('Done, found [', ncol(chars), '] characters for [', 
       nspp, '/', length(tree$tip.label), '] tips\n', sep="")
@@ -59,10 +71,11 @@ for(phychr_file in phychr_files) {
   
   cat("    Calculating clades_change obj .... ")
   clades_phylo <- MoreTreeTools::getClades(tree)
-  changes_by_node <- changesByNode(nds=clades_phylo[['clade.node']],
-                                   changes, parallel=TRUE)
-  clades_phylo$changes <- changes_by_node
+  changes_by_clade <- changesByClade(nds=clades_phylo[['clade.node']],
+                                    changes, tree)
+  clades_phylo$changes <- changes_by_clade
   clades_change <- clades_phylo
+  cat('Done\n')
   
   cat("    Outputting ... ")
   save(clades_change, file=file.path(output_dir, phychr_file))

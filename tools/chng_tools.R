@@ -1,34 +1,67 @@
 
-matchClades <- function(q.clade.node, s.clade.node) {
+matchClades <- function(q_clade_obj, s_clade_obj) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.
   #
   # Args:
-  #  q.clade.node: result from getClades for query phylogeny
-  #  s.clade.node: subject
+  #  q_clade_obj: result from getClades for query phylogeny
+  #  s_clade_obj: subject
   #
   # Returns:
   #  list of subject node numbers in order of query nodes
-  s.clade.env <- new.env()
-  local(s.clades <- s.clade.node[[1]], env = s.clade.env)
-  local(s.nodes <- s.clade.node[[2]],  env = s.clade.env)
-  matchQCladeInSClades <- local(function(q.clade) {
-    compClades <- function(s.clade) {
-      sum(q.clade %in% s.clade) / length(q.clade)
+  .mtch <- function(q) {
+    .mtchScr <- function(s) {
+      (sum(q %in% s) / length(q)) +
+        (sum(s %in% q) / length(s))
     }
-    match.scores <- plyr::ldply(.data = s.clades, .fun = compClades)[ ,1]
-    match.bool <- match.scores == max(match.scores) & match.scores > 0
-    res <- s.nodes[match.bool]
-    s.clades <<- s.clades[!match.bool]
-    s.nodes <<- s.nodes[!match.bool]
-    if(length(res) == 0) {
-      NA
-    } else {
-      res
+    sbst <- which(len_s >= length(q))
+    mtch_scrs <- sapply(sclades[sbst], .mtchScr)
+    if(all(mtch_scrs < 1)) return(NA)
+    snodes[sbst[which.max(mtch_scrs)]]
+  }
+  sclades <- s_clade_obj[[1]]
+  snodes <- s_clade_obj[[2]]
+  qclades <- q_clade_obj[[1]]
+  len_s <- sapply(sclades, length)
+  sapply(qclades, .mtch)
+}
+
+getClades <- function(tree) {
+  nodes <- 1:(tree$Nnode + length(tree$tip.label))
+  clades <- plyr::mlply(.data = data.frame(node = nodes), .fun = getChildren, 
+                        tree)
+  if (!is.null(tree$all.node.label)) {
+    names(clades) <- tree$all.node.label
+  }
+  sizes <- plyr::ldply(.data = clades, .fun = length)[, 2]
+  clades <- clades[order(sizes, decreasing = TRUE)]
+  nodes <- nodes[order(sizes, decreasing = TRUE)]
+  list(clade.children = clades, clade.node = nodes)
+}
+
+getChildren <- function(tree, node) {
+  if (!is.numeric(node)) {
+    stop("Node is not numeric!")
+  }
+  if (node > tree$Nnode + length(tree$tip.label)) {
+    stop("Node is greater than the number of nodes in tree!")
+  }
+  if (node <= length(tree$tip.label)) {
+    term.nodes <- node
+  }
+  else {
+    term.nodes <- vector()
+    temp.nodes <- node
+    while (length(temp.nodes) > 0) {
+      connecting.nodes <- tree$edge[tree$edge[, 1] %in% 
+                                      temp.nodes, 2]
+      term.nodes <- c(term.nodes, connecting.nodes[connecting.nodes <= 
+                                                     length(tree$tip.label)])
+      temp.nodes <- connecting.nodes[connecting.nodes > 
+                                       length(tree$tip.label)]
     }
-  }, env = s.clade.env)
-  res <- plyr::llply(.data = q.clade.node[[1]], .fun = matchQCladeInSClades)
-  res
+  }
+  term.nodes
 }
 
 calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
@@ -220,26 +253,41 @@ addOutgroup <- function(phylo, outgroup.factor = 100) {
   return(res)
 }
 
-changesByNode <- function(nds, changes, parallel) {
+changesByClade <- function(nds, changes, tree) {
   # loop through nd indexes and pull out change
   # by character from "changes"
   # Args:
   #  nds: indexes of nodes in tree, derived from clades_phylo
   #  changes: changes by node for each character, derived from calcChange
-  #  parallel: bool, plyr parallelisation
+  #  tree: ape class tree
   # Returns
   #  list of change by character for each node, NA if no info for character
   #   order is same as the character order in changes.
   getChangesByNode <- function(nd) {
     getChange <- function(char) {
-      if(nd %in% char[['f.phylo']]) {
-        return(char[['change']][char[['f.phylo']] == nd])
+      if(nd %in% char[['f.node']]) {
+        # take mean, might be more than one possible match in f.phylo
+        cs <- char[['change']][char[['f.node']] == nd]
+        return(mean(cs, na.rm=TRUE))
       }
       NA
     }
     sapply(changes, getChange)
   }
-  res <- plyr::mlply(nds, .fun=getChangesByNode, .parallel=parallel)
-  res <- res[1:length(res)]
+  getChangesByClade <- function(nd) {
+    getChange <- function(i) {
+      char_states <- sapply(tmp_nds, function(x) changes_by_node[[x]][[i]])
+      if(any(!is.na(char_states))) {
+        return(mean(char_states, na.rm=TRUE))
+      }
+      NA
+    }
+    edgs <- MoreTreeTools::getEdges(tree, node=nd)
+    tmp_nds <- tree$edge[edgs, 2]
+    sapply(1:length(changes), getChange)
+  }
+  nds <- clades_phylo[['clade.node']]
+  changes_by_node <- lapply(nds, getChangesByNode)
+  res <- lapply(nds, getChangesByClade)
   res
 }
