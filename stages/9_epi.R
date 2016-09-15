@@ -1,6 +1,4 @@
 # CALCULATE EPIS FROM NODE_OBJ
-# TODO: add ranks
-
 
 # START
 cat(paste0('\nStage `epi` started at [', Sys.time(), ']\n'))
@@ -40,49 +38,29 @@ cat("Done.\n")
 # some data points don't make sense, reasons as yet unknown
 cld_data <- cld_data[cld_data[['cntrst_n']] != Inf, ]  # two instances of this
 
+
 # CALCULATE EPIS
 cat("Calculating EPIs .... ")
 cld_data$epi <- log((cld_data[['cntrst_chng']] + cld_data[['cntrst_n']]) / cld_data[['tmsplt']])
 cld_data$pepi <- log(cld_data[['cntrst_n']] / cld_data[['tmsplt']])
+#cld_data <- cld_data[!is.na(cld_data$epi), ]
 cat("Done.\n")
-
-# PLOTS
-plotEPI(epi, n=25)
-
-
-
-
-pdf(file.path(output_dir, "res.pdf"))
-ggplot(data=p_data, aes(x=log(tmsplt), y=log(cntrst_n), colour=pepi)) +
-  geom_point() + theme_bw()
-ggplot(data=epi, aes(x=pepi, y=log(ed))) +
-  geom_point() + theme_bw()
-ggplot(data=epi, aes(x=pepi, y=chng)) +
-  geom_point() + theme_bw()
-dev.off()
-
-# EPI and PEPI
-cor.test(cld_data$pepi, cld_data$epi)  # correlate strongly, R = ~0.7
-# this is what you would expect though, how much does change by itself correlate with pepi
-pull <- !is.na(cld_data$cntrst_chng)
-cor.test(cld_data$pepi[pull], cld_data$cntrst_chng[pull])
-# TODO: workout why change has NA, Nan and 1
 
 # ADDING TAXONOMIC INFO
 txids <- ls(node_obj)
-epi$txnmcgrp <- NA
+cld_data$txnmcgrp <- NA
 mmls <- getGrpTxids(txids, "mammals")
-epi$txnmcgrp[epi$txid %in% mmls] <- 'mammal'
+cld_data$txnmcgrp[cld_data$txid %in% mmls] <- 'mammal'
 brds <- getGrpTxids(txids, "birds")
-epi$txnmcgrp[epi$txid %in% brds] <- 'bird'
+cld_data$txnmcgrp[cld_data$txid %in% brds] <- 'bird'
 lpdsrs <- getGrpTxids(txids, "lepidosaurs")
-epi$txnmcgrp[epi$txid %in% lpdsrs] <- 'lepidosaur'
+cld_data$txnmcgrp[cld_data$txid %in% lpdsrs] <- 'lepidosaur'
 
 # OUTPUT
 cat("Outputting ... ")
-top50 <- epi[order(epi[['pepi']])[1:50], ]
+top50 <- cld_data[order(cld_data[['pepi']])[1:50], ]
 write.csv(top50, file.path(output_dir, "top50.csv"), row.names=FALSE)
-save(node_obj, epi, file=output_file)
+save(node_obj, cld_data, file=output_file)
 cat('Done.\n')
 
 # END
