@@ -33,6 +33,7 @@ cat('Searching Time Tree ....\n')
 txids <- ls(node_obj)
 cnddts <- cnddts[cnddts %in% txids]
 cc <- 0
+cat('    [', length(cnddts), '] txids to search for ....\n')
 for(i in 1:length(cnddts)) {
   txid <- cnddts[i]
   iPrnt(i, length(cnddts))

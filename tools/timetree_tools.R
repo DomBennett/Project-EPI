@@ -57,6 +57,9 @@ getVal <- function(strng) {
 getTTOL <- function(sp1, sp2) {
   # search timetree via html
   # TODO: avoid using line numbers
+  pttrn <- '(\\/|\\.|\\?|\\,)'  # avoid unwanted characters in URL
+  sp1 <- sub(pttrn, '_', sp1)
+  sp2 <- sub(pttrn, '_', sp2)
   fl <- file.path(cache_dir, paste0(sp1, "_", sp2, ".RData"))
   if(file.exists(fl)) {
     load(fl)
