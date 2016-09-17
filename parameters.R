@@ -35,6 +35,9 @@ anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
 
 # TIMETREE PARAMETERS
 max_tt <- 10  # maximum number of searches if multiple sisters, higher more accurate but slower
+try_again <- FALSE  # saves time split dates to prevent excessive searches,
+ # if max_tt is low there is a chance the incorrect tmsplt could have been saved,
+ # in which case for added accuracy (but more time) increase max_tt and set this to TRUE
 
 # IGNORE PATTERNS
 # Ignore nodes that are not true "natural" biological entities

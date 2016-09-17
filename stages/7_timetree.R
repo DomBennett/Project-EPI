@@ -18,15 +18,9 @@ input_file <- file.path("5_split", "tt_obj.RData")
 output_file <- file.path('7_timetree', 'res.RData')
 
 # INPUT
-# load output file if it exists already
-# remember to delete output to refresh timetree estimates
-if(file.exists(output_file)) {
-  load(output_file)
-} else {
-  load(input_file)
-  node_obj <- tt_obj
-  rm(tt_obj)
-}
+load(input_file)
+node_obj <- tt_obj
+rm(tt_obj)
 
 # LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree ....\n')

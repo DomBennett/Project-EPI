@@ -8,6 +8,10 @@ cache_dir <- file.path("caches", "timetree")
 if(!file.exists(cache_dir)) {
   dir.create(cache_dir)
 }
+tmsplt_dir <- file.path("caches", "tmsplt")
+if(!file.exists(tmsplt_dir)) {
+  dir.create(tmsplt_dir)
+}
 
 # IGNR FUNCTIONS
 # functions that will prevent searching for names
@@ -123,6 +127,11 @@ getDivergence <- function(id1, id2) {
 
 getTmsplt <- function(txid) {
   # Return time since split based on divergence from sister
+  fl <- file.path(tmsplt_dir, paste0(txid, ".RData"))
+  if(file.exists(fl) & !try_again) {
+    load(fl)
+    return(tmsplt)
+  }
   sstrs <- node_obj[[txid]][['sstr']]
   tmsplt <- getDivergence(txid, sstrs[1])
   if(length(sstrs) > 1) {
@@ -138,5 +147,6 @@ getTmsplt <- function(txid) {
       }
     }
   }
+  save(tmsplt, file=fl)
   tmsplt
 }
