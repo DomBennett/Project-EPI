@@ -64,7 +64,7 @@ getTTOL <- function(sp1, sp2) {
   if(file.exists(fl)) {
     load(fl)
   } else {
-    Sys.sleep(4)  # prevent overloading timetree
+    Sys.sleep(sample(1:4, 1))  # prevent overloading timetree
     ping <- suppressWarnings(try(readLines("http://www.timetree.org/", n=1),
                                  silent=TRUE))
     if(class(ping) == "try-error") {
@@ -126,6 +126,9 @@ getTmsplt <- function(txid) {
   sstrs <- node_obj[[txid]][['sstr']]
   tmsplt <- getDivergence(txid, sstrs[1])
   if(length(sstrs) > 1) {
+    if(length(sstrs) > (max_tt + 1)) {
+      sstrs <- sample(sstrs[-1], max_tt)
+    }
     for(j in 2:length(sstrs)) {
       tmp <- getDivergence(txid, sstrs[j])
       # always seek greatest time

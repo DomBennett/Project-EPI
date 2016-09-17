@@ -33,9 +33,8 @@ anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
                     "amphibia"="8292",
                     "vertebrates"="7742")
 
-# ANALYSIS PARAMETERS
-nitrtns <- 999  # number of iterations for permuation test
-nlfs <- 100     # number of clades at which to cutoff
+# TIMETREE PARAMETERS
+max_tt <- 10  # maximum number of searches if multiple sisters, higher more accurate but slower
 
 # IGNORE PATTERNS
 # Ignore nodes that are not true "natural" biological entities
