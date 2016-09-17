@@ -8,6 +8,7 @@ source('parameters.R')
 
 # FUNCTIONS
 source(file.path('tools', 'timetree_tools.R'))
+source(file.path('tools', 'i_tools.R'))
 
 # DIRS
 if(!file.exists('7_timetree')) {
@@ -17,16 +18,24 @@ input_file <- file.path("5_split", "tt_obj.RData")
 output_file <- file.path('7_timetree', 'res.RData')
 
 # INPUT
-load(input_file)
-node_obj <- tt_obj
-rm(tt_obj)
+# load output file if it exists already
+# remember to delete output to refresh timetree estimates
+if(file.exists(output_file)) {
+  load(output_file)
+} else {
+  load(input_file)
+  node_obj <- tt_obj
+  rm(tt_obj)
+}
 
 # LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree ....\n')
 txids <- ls(node_obj)
 cnddts <- cnddts[cnddts %in% txids]
 cc <- 0
-for(txid in cnddts) {
+for(i in 1:length(cnddts)) {
+  txid <- cnddts[i]
+  iPrnt(i, length(cnddts))
   if('tmsplt' %in% names(node_obj[[txid]])) {
     cc <- cc + 1
     next
@@ -38,14 +47,12 @@ for(txid in cnddts) {
   }
   # assign
   node_obj[[txid]][['tmsplt']] <- tmsplt[['mean_ttol']]
+  # save every loop in case error
+  save(node_obj, cnddts, file=output_file)
+  # count
   cc <- cc + 1
 }
 cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")
-
-# OUTPUT
-cat('Saving ....\n')
-save(node_obj, cnddts, file=output_file)
-cat('Done.\n')
 
 # END
 cat(paste0('\nStage `timetree` finished at [', Sys.time(), ']\n'))
