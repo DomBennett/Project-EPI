@@ -1,4 +1,4 @@
-plotEPI <- function(epi, n=100) {
+plotEPI <- function(cld_data, n=100) {
   pepi_z <- (cld_data[['pepi']] - mean(cld_data[['pepi']], na.rm=TRUE)) /
     sd(cld_data[['pepi']], na.rm=TRUE)
   epi_z <- (cld_data[['epi']] - mean(cld_data[['epi']], na.rm=TRUE)) /
