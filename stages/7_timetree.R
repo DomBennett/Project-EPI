@@ -18,9 +18,11 @@ input_file <- file.path("5_split", "tt_obj.RData")
 output_file <- file.path('7_timetree', 'res.RData')
 
 # INPUT
+cat('Loading input.... ')
 load(input_file)
 node_obj <- tt_obj
 rm(tt_obj)
+cat('Done.\n')
 
 # LOOK UP TIMETREE DIVERGENCES
 cat('Searching Time Tree ....\n')
@@ -42,12 +44,15 @@ for(i in 1:length(cnddts)) {
   }
   # assign
   node_obj[[txid]][['tmsplt']] <- tmsplt[['mean_ttol']]
-  # save every loop in case error
-  save(node_obj, cnddts, file=output_file)
   # count
   cc <- cc + 1
 }
 cat("Done. Time data now available for [", cc, "] nodes.\n", sep="")
+
+# OUTPUT
+cat('Saving ....\n')
+save(node_obj, cnddts, file=output_file)
+cat('Done.\n')
 
 # END
 cat(paste0('\nStage `timetree` finished at [', Sys.time(), ']\n'))
