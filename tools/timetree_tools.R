@@ -58,9 +58,20 @@ getVal <- function(strng) {
   as.numeric(substr(strng, start=26, stop=stop))
 }
 
+getMeanVal <- function(lns) {
+  res <- NA
+  for(ln in lns) {
+    if(grepl('class="time"', ln) &
+      grepl('TTOL', ln)) {
+      res <- gsub("<[^>]*>", "", ln)
+      res <- as.numeric(gsub("[^\\.0-9]", "", res))
+    }
+  }
+  res
+}
+
 getTTOL <- function(sp1, sp2) {
   # search timetree via html
-  # TODO: avoid using line numbers
   pttrn <- '(\\/|\\.|\\?|\\,)'  # avoid unwanted characters in URL
   sp1 <- sub(pttrn, '_', sp1)
   sp2 <- sub(pttrn, '_', sp2)
@@ -68,27 +79,28 @@ getTTOL <- function(sp1, sp2) {
   if(file.exists(fl)) {
     load(fl)
   } else {
-    Sys.sleep(sample(1:4, 1))  # prevent overloading timetree
-    ping <- suppressWarnings(try(readLines("http://www.timetree.org/", n=1),
-                                 silent=TRUE))
-    if(class(ping) == "try-error") {
-      stop("---- Server is down ----")
+    attmpts <- 1
+    while(attmpts <= length(wt)) {
+      Sys.sleep(wt[attmpts])
+      url <- "http://www.timetree.org/search/pairwise/"
+      sp1 <- gsub("\\s+", "%20", sp1)
+      sp2 <- gsub("\\s+", "%20", sp2)
+      qry <- paste0(url, sp1, '/', sp2)
+      res <- suppressWarnings(try(expr=readLines(qry),
+                                  silent=TRUE))
+      if(class(res) != 'try-error') {
+        unlink(qry)
+        mean_ttol <- getMeanVal(res)
+        break
+      }
+      attmpts <- attmpts + 1
+      cat('----- Failed to reach timetree, trying again in [',
+          wt[attmpts], 's] -----\n', sep='')
     }
-    url <- "http://www.timetree.org/search/pairwise/"
-    sp1 <- gsub("\\s+", "%20", sp1)
-    sp2 <- gsub("\\s+", "%20", sp2)
-    qry <- paste0(url, sp1, '/', sp2)
-    res <- suppressWarnings(try(expr=readLines(qry),
-                                silent=TRUE))
-    if(class(res) != 'try-error') {
-      unlink(qry)
-      mean_ttol <- getVal(res[[195]])
-      median_ttol <- getVal(res[[199]])
-    } else {
-      mean_ttol <- NA
-      median_ttol <- NA
+    if(attmpts > length(wt)) {
+      stop("---- Max attempts made, server must be down ----")
     }
-    res <- data.frame(mean_ttol, median_ttol)
+    res <- mean_ttol
     save(res, file=fl)
   }
   .ignrChck(res, sp1, sp2)
@@ -110,18 +122,21 @@ findCommonName <- function(ids) {
 }
 
 getDivergence <- function(id1, id2) {
-  kids_1 <- node_obj[[id1]][['kids']]
-  kids_2 <- node_obj[[id2]][['kids']]
-  if(length(kids_1) > 1) {
-    nm1 <- findCommonName(kids_1)
-  } else {
-    nm1 <- node_obj[[id1]][['nm']][['scientific name']]
-  }
-  if(length(kids_2) > 1) {
-    nm2 <- findCommonName(kids_2)
-  } else {
-    nm2 <- node_obj[[id2]][['nm']][['scientific name']]
-  }
+  # kids_1 <- node_obj[[id1]][['kids']]
+  # kids_2 <- node_obj[[id2]][['kids']]
+  # if(length(kids_1) > 1) {
+  #   nm1 <- findCommonName(kids_1)
+  # } else {
+  #   nm1 <- node_obj[[id1]][['nm']][['scientific name']]
+  # }
+  # if(length(kids_2) > 1) {
+  #   nm2 <- findCommonName(kids_2)
+  # } else {
+  #   nm2 <- node_obj[[id2]][['nm']][['scientific name']]
+  # }
+  # N.B. no need to search for species, timetree uses NCBI clade names
+  nm1 <- node_obj[[id1]][['nm']][['scientific name']]
+  nm2 <- node_obj[[id2]][['nm']][['scientific name']]
   getTTOL(nm1, nm2)
 }
 
@@ -141,7 +156,7 @@ getTmsplt <- function(txid) {
     for(j in 2:length(sstrs)) {
       tmp <- getDivergence(txid, sstrs[j])
       # always seek greatest time
-      bool <- tmsplt[['mean_ttol']] > tmp[['mean_ttol']]
+      bool <- tmsplt > tmp
       if(!is.na(bool) && bool) {
         tmsplt <- tmp
       }

@@ -29,7 +29,8 @@ cat('Searching Time Tree ....\n')
 txids <- ls(node_obj)
 cnddts <- cnddts[cnddts %in% txids]
 cc <- 0
-cat('    [', length(cnddts), '] txids to search for ....\n')
+cat('    [', length(cnddts), '] txids to search for ....\n',
+    sep='')
 for(i in 1:length(cnddts)) {
   txid <- cnddts[i]
   iPrnt(i, length(cnddts))
@@ -39,11 +40,11 @@ for(i in 1:length(cnddts)) {
   }
   # get time since split
   tmsplt <- getTmsplt(txid)
-  if(is.na(tmsplt['mean_ttol'])) {
+  if(is.na(tmsplt)) {
     next
   }
   # assign
-  node_obj[[txid]][['tmsplt']] <- tmsplt[['mean_ttol']]
+  node_obj[[txid]][['tmsplt']] <- tmsplt
   # count
   cc <- cc + 1
 }
