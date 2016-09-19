@@ -108,10 +108,11 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
   }
   calcEachRPhylo <- function(part.reconstruction.obj) {
     calcEachRPhyloEdge <- function(r.node) {
-      connecting.node <- which(r.phylo$edge[ ,2] == r.node)
-      edge <- r.phylo$edge[connecting.node, ]
-      start <- r.node.states[edge[1], ]
-      end <- r.node.states[edge[2], ]
+      # change is calculated for the PRECEDING edge of a given node
+      connecting.edge <- which(r.phylo$edge[ ,2] == r.node)
+      nds <- r.phylo$edge[connecting.edge, ]
+      start <- r.node.states[nds[1], ]
+      end <- r.node.states[nds[2], ]
       if(is.numeric(start)) { # for ordered states
         change <- abs(sum(start) - sum(end))/2
       } else { # for unordered states
@@ -283,7 +284,8 @@ changesByClade <- function(nds, changes, tree) {
       NA
     }
     edgs <- MoreTreeTools::getEdges(tree, node=nd)
-    tmp_nds <- tree$edge[edgs, 2]
+    # change is calculated for the PRECEDING edge of a given node
+    tmp_nds <- c(nd, tree$edge[edgs, 2])  # all descending nodes + node itself
     sapply(1:length(changes), getChange)
   }
   nds <- clades_phylo[['clade.node']]
