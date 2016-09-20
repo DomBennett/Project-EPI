@@ -33,9 +33,11 @@ anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
                     "amphibia"="8292",
                     "vertebrates"="7742")
 
-# TIMETREE PARAMETERS
+# URL SEARCH (timetree, ncbi, wikipedia)
+wt <- c(1, 3, 10, 60, 120, 600, 3600, 7200)  # waiting times for attempts to access a URL
+
+# TIMETREE
 max_tt <- 10  # maximum number of searches if multiple sisters, higher more accurate but slower
-wt <- c(1, 3, 10, 60, 120, 600, 3600, 7200)  # waiting times for attempts to timetree
 try_again <- FALSE  # saves time split dates to prevent excessive searches,
  # if max_tt is low there is a chance the incorrect tmsplt could have been saved,
  # in which case for added accuracy (but more time) increase max_tt and set this to TRUE

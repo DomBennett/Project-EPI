@@ -9,9 +9,11 @@ source('parameters.R')
 
 # LIBS
 cat("Loading libraries ...\n")
-library(ggplot2)
 source(file.path("tools", "epi_tools.R"))
 source(file.path('tools', 'node_obj_tools.R'))
+source(file.path('tools', 'url_tools.R'))
+source(file.path('tools', 'wiki_tools.R'))
+source(file.path('tools', 'i_tools.R'))
 
 # DIRS
 cc_dir <- "8_cntrst_chng"
@@ -47,6 +49,7 @@ cld_data$pepi <- log(cld_data[['cntrst_n']] / cld_data[['tmsplt']])
 cat("Done.\n")
 
 # ADDING TAXONOMIC INFO
+cat("Adding taxonomic information .... ")
 txids <- ls(node_obj)
 cld_data$txnmcgrp <- NA
 mmls <- getGrpTxids(txids, "mammals")
@@ -55,6 +58,20 @@ brds <- getGrpTxids(txids, "birds")
 cld_data$txnmcgrp[cld_data$txid %in% brds] <- 'bird'
 lpdsrs <- getGrpTxids(txids, "lepidosaurs")
 cld_data$txnmcgrp[cld_data$txid %in% lpdsrs] <- 'lepidosaur'
+cat("Done.\n")
+
+# WIKI SEARCH
+cat("Searching wikipedia for living fossil mentions .... ")
+cld_data$wiki <- NA
+for(i in 1:nrow(cld_data)) {
+  iPrnt(i, nrow(cld_data))
+  txid <- cld_data[['txid']][i]
+  # return TRUE if "living fossil" in wiki article
+  # return FALSE if not
+  # return NA if no wiki article found
+  cld_data[['wiki']][i] <- getWikiLFMention(txid)
+}
+cat("Done.\n")
 
 # OUTPUT
 cat("Outputting ... ")
