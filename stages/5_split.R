@@ -4,7 +4,6 @@
 cat(paste0('\nStage `split` started at [', Sys.time(), ']\n'))
 
 # FUNCTIONS
-library(treeman)
 source(file.path('tools', 'node_obj_tools.R'))
 
 # DIRS
