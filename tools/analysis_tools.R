@@ -22,3 +22,8 @@ plotEPI <- function(cld_data, n=100) {
     xlab("") + ylab("")
   p
 }
+
+#http://docs.ggplot2.org/current/geom_smooth.html
+binomial_smooth <- function(...) {
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), ...)
+}

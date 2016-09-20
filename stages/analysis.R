@@ -35,6 +35,11 @@ min(cld_data[['pepi']], na.rm=TRUE)
 mean(cld_data[['pepi']], na.rm=TRUE)
 max(cld_data[['pepi']], na.rm=TRUE)
 
+# WIKI
+sum(!is.na(cld_data$wiki))
+p <- ggplot(cld_data, aes(x=pepi, y=as.numeric(wiki))) + binomial_smooth()
+p + theme_bw() + xlab('pEPI') + ylab("'Living Fossil' in Wikipedia")
+
 # WHICH LARGE CLADES HAVE LOW PEPI?
 pull <- !is.na(cld_data[['pepi']]) &
   cld_data[['n']] > 100
@@ -103,6 +108,12 @@ pull <- !is.na(cld_data[['cntrst_n']]) &
   !is.na(cld_data[['cntrst_chng']]) &
   cld_data[['cntrst_chng']] != 0
 ggplot(cld_data[pull,], aes(y=log(cntrst_n), x=log(tmsplt), colour=log(cntrst_chng))) + geom_point()
+# WHATS THE RELATIONSHIP BETWEEN SUCCESS AND N?
+lg_n <- log(cld_data$cntrst_n)
+p_data <- data.frame(n=abs(lg_n - mean(lg_n)),
+                     t=log(cld_data$tmsplt),
+                     grp=cld_data$txnmcgrp)
+ggplot(p_data, aes(y=n, x=t)) + geom_point() + stat_smooth(formula=y~exp(x), method='lm')
 
 
 # OTHER
