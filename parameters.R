@@ -31,7 +31,10 @@ anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
                     "bony_fish"="186623",
                     "lepidosaurs"="8504",
                     "amphibia"="8292",
-                    "vertebrates"="7742")
+                    "vertebrates"="7742",
+                    "plants"="3193",
+                    "metazoa"="33208",
+                    "arthropods"="6656")
 
 # URL SEARCH (timetree, ncbi, wikipedia)
 wt <- c(1, 3, 10, 60, 120, 600, 3600, 7200)  # waiting times for attempts to access a URL

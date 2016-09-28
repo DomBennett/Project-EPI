@@ -3,6 +3,9 @@
 # START
 cat(paste0('\nStage `split` started at [', Sys.time(), ']\n'))
 
+# PARAMETERS
+source('parameters.R')
+
 # FUNCTIONS
 source(file.path('tools', 'node_obj_tools.R'))
 
@@ -17,6 +20,17 @@ input_file <- file.path("4_cntrst_n", "res.RData")
 # INPUT
 load(input_file)
 tree_files <- list.files(tree_dir, pattern='.RData')
+
+# SAVE TAXONOMIC INFO ON NODES
+# see paramters for what will be added
+txids <- ls(node_obj)
+for(i in 1:length(anlyss_grps)) {
+  txid <- anlyss_grps[[i]]
+  if(!txid %in% txids) {
+    stop("Unknown ID in anlyss_grps, change parameters")
+  }
+  grpids <- getGrpTxids(txids, names(anlyss_grps)[i])
+}
 
 # SPLIT NODE_OBJ
 # split node_obj into one with phylo estiamtes and one without
