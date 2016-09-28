@@ -13,51 +13,7 @@ if(!file.exists(tmsplt_dir)) {
   dir.create(tmsplt_dir)
 }
 
-# IGNR FUNCTIONS
-# functions that will prevent searching for names
-# that have failed to be found
-.ignr_scr_max <- 3 # maximum number of times a nm fails to be found before it is ignored
-.ignr_file <- file.path(cache_dir, "ignr.RData")
-if(!file.exists(.ignr_file)) {
-  .ignr <- list("scrs"=list(), 'nms'=NULL)
-} else {
-  load(.ignr_file)
-}
-.updateIgnr <- function() {
-  bool <- unlist(lapply(.ignr[['scrs']],
-                        function(x) x > .ignr_scr_max))
-  if(!is.null(bool)) {
-    nms <- names(bool)[bool]
-    .ignr[['nms']] <- c(.ignr[['nms']], nms)
-    .ignr[['scrs']] <- .ignr[['scrs']][!bool]
-    save(.ignr, file=.ignr_file)
-    .ignr <<- .ignr
-  }
-  NULL
-}
-.ignrChck <- function(res, nm1, nm2) {
-  if(all(is.na(res))) {
-    if(!is.null(.ignr[['scrs']][[nm1]])) {
-      .ignr[['scrs']][[nm1]] <-
-        .ignr[['scrs']][[nm1]] + 1
-    } else {
-      .ignr[['scrs']][[nm1]] <- 1
-    }
-    if(!is.null(.ignr[['scrs']][[nm2]])) {
-      .ignr[['scrs']][[nm2]] <-
-        .ignr[['scrs']][[nm2]] + 1
-    } else {
-      .ignr[['scrs']][[nm2]] <- 1
-    }
-  }
-}
-
 # FUNCTIONS
-getVal <- function(strng) {
-  stop <- regexpr(" Mya", strng) - 1
-  as.numeric(substr(strng, start=26, stop=stop))
-}
-
 getMeanVal <- function(lns) {
   res <- NA
   for(ln in lns) {
@@ -70,74 +26,19 @@ getMeanVal <- function(lns) {
   res
 }
 
-getTTOL <- function(sp1, sp2) {
+getTTOL <- function(id1, id2) {
   # search timetree via html
-  pttrn <- '(\\/|\\.|\\?|\\,)'  # avoid unwanted characters in URL
-  sp1 <- sub(pttrn, '_', sp1)
-  sp2 <- sub(pttrn, '_', sp2)
-  fl <- file.path(cache_dir, paste0(sp1, "_", sp2, ".RData"))
+  fl <- file.path(cache_dir, paste0(id1, "_", id2, ".RData"))
   if(file.exists(fl)) {
     load(fl)
   } else {
-    attmpts <- 1
-    while(attmpts <= length(wt)) {
-      Sys.sleep(wt[attmpts])
-      url <- "http://www.timetree.org/search/pairwise/"
-      sp1 <- gsub("\\s+", "%20", sp1)
-      sp2 <- gsub("\\s+", "%20", sp2)
-      qry <- paste0(url, sp1, '/', sp2)
-      res <- suppressWarnings(try(expr=readLines(qry),
-                                  silent=TRUE))
-      if(class(res) != 'try-error') {
-        unlink(qry)
-        mean_ttol <- getMeanVal(res)
-        break
-      }
-      attmpts <- attmpts + 1
-      cat('----- Failed to reach timetree, trying again in [',
-          wt[attmpts], 's] -----\n', sep='')
-    }
-    if(attmpts > length(wt)) {
-      stop("---- Max attempts made, server must be down ----")
-    }
+    url <- "http://www.timetree.org/search/pairwise/"
+    qry <- paste0(url, id1, '/', id2)
+    mean_ttol <- getMeanVal(searchURL(qry, site))
     res <- mean_ttol
     save(res, file=fl)
   }
-  .ignrChck(res, sp1, sp2)
-  .updateIgnr()
   res
-}
-
-findCommonName <- function(ids) {
-  # Return the most likely name to be found in timetree
-  # (Based on number of name entries in genbank)
-  nms <- unlist(lapply(ids, function(x) node_obj[[x]][['nm']][['scientific name']]))
-  ids <- ids[!nms %in% .ignr[['nms']]]
-  nnms <- unlist(lapply(ids, function(x) length(node_obj[[x]][['nm']])))
-  i <- which.max(nnms)
-  if(length(i) > 1) {
-    i <- sample(i, 1)
-  }
-  nm <- node_obj[[ids[i]]][['nm']][['scientific name']]
-}
-
-getDivergence <- function(id1, id2) {
-  # kids_1 <- node_obj[[id1]][['kids']]
-  # kids_2 <- node_obj[[id2]][['kids']]
-  # if(length(kids_1) > 1) {
-  #   nm1 <- findCommonName(kids_1)
-  # } else {
-  #   nm1 <- node_obj[[id1]][['nm']][['scientific name']]
-  # }
-  # if(length(kids_2) > 1) {
-  #   nm2 <- findCommonName(kids_2)
-  # } else {
-  #   nm2 <- node_obj[[id2]][['nm']][['scientific name']]
-  # }
-  # N.B. no need to search for species, timetree uses NCBI clade names
-  nm1 <- node_obj[[id1]][['nm']][['scientific name']]
-  nm2 <- node_obj[[id2]][['nm']][['scientific name']]
-  getTTOL(nm1, nm2)
 }
 
 getTmsplt <- function(txid) {
@@ -148,16 +49,17 @@ getTmsplt <- function(txid) {
     return(tmsplt)
   }
   sstrs <- node_obj[[txid]][['sstr']]
-  tmsplt <- getDivergence(txid, sstrs[1])
+  tmsplt <- getTTOL(txid, sstrs[1])
   if(length(sstrs) > 1) {
     if(length(sstrs) > (max_tt + 1)) {
       sstrs <- sample(sstrs[-1], max_tt)
     }
     for(j in 2:length(sstrs)) {
-      tmp <- getDivergence(txid, sstrs[j])
+      tmp <- getTTOL(txid, sstrs[j])
       # always seek greatest time
       bool <- tmsplt > tmp
-      if(!is.na(bool) && bool) {
+      if(is.na(tmsplt) & is.numeric(tmp) |
+         !is.na(bool) && bool) {
         tmsplt <- tmp
       }
     }
