@@ -32,14 +32,13 @@ load(cc_file)
 cnddts <- ls(node_obj)
 cld_data <- genDataframe(cnddts, node_obj)
 load(tt_file)
-cld_data <- rbind(cld_data, genDataframe(cnddts, tt_obj))
-rm(tt_obj, node_obj)
+cld_data <- rbind(cld_data, genDataframe(cnddts, node_obj))
+rm(node_obj)
 cat("Done.\n")
 
 # CLEAN-UP
 # some data points don't make sense, reasons as yet unknown
 cld_data <- cld_data[cld_data[['cntrst_n']] != Inf, ]  # two instances of this
-
 
 # CALCULATE EPIS
 cat("Calculating EPIs .... ")
@@ -48,9 +47,19 @@ cld_data$pepi <- log(cld_data[['cntrst_n']] / cld_data[['tmsplt']])
 #cld_data <- cld_data[!is.na(cld_data$epi), ]
 cat("Done.\n")
 
+# POST-FILTERING
+# remove non-taxonomic entries
+# mycorrhizal specimen is its own taxonomic clade, although practical this cannot be the true taxonomy
+pull <- cld_data[['nm']] != "vouchered mycorrhizae (Pezizomycotina)"
+# any names with numbers indicate species defined from genomic sequencing, true taxonomy cannot be known
+pull <- pull & !grepl("[0-9]", cld_data[['nm']])
+# environmental samples
+pull <- pull & !grepl("environmental", cld_data[['nm']])
+cld_data <- cld_data[pull, ]
+
 # ADDING TAXONOMIC INFO
 cat("Adding taxonomic information .... ")
-txids <- ls(node_obj)
+txids <- cld_data[['txid']]
 cld_data$txnmcgrp <- NA
 mmls <- getGrpTxids(txids, "mammals")
 cld_data$txnmcgrp[cld_data$txid %in% mmls] <- 'mammal'
@@ -75,9 +84,10 @@ cat("Done.\n")
 
 # OUTPUT
 cat("Outputting ... ")
-top50 <- cld_data[order(cld_data[['pepi']])[1:50], ]
-write.csv(top50, file.path(output_dir, "top50.csv"), row.names=FALSE)
-save(node_obj, cld_data, file=output_file)
+top100 <- cld_data[order(cld_data[['pepi']])[1:100], ]
+write.csv(top100, file.path(output_dir, "top100.csv"), row.names=FALSE)
+#save(node_obj, cld_data, file=output_file)
+save(cld_data, file=output_file)
 cat('Done.\n')
 
 # END

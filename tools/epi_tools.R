@@ -5,8 +5,8 @@ genDataframe <- function(cnddts, node_obj) {
   cnddts <- cnddts[!duplicated(cnddts)]
   cnddts <- unique(unlist(sapply(cnddts,
                                  function(x) c(x, node_obj[[x]][['sstr']]))))
-  nms <- tmsplts <- cntrst_ns <- cntrst_chngs <-
-    chngs <- eds <- ns <- rep(NA, length(cnddts))
+  cmn_nms <- sci_nms <- tmsplts <- cntrst_ns <- cntrst_chngs <-
+    eds <- ns <- rep(NA, length(cnddts))
   # loop through candidate IDs and extract info
   for(i in 1:length(cnddts)) {
     tmsplt <- node_obj[[cnddts[i]]][["tmsplt"]]
@@ -28,7 +28,15 @@ genDataframe <- function(cnddts, node_obj) {
       tmsplts[i] <- tmsplt
       cntrst_ns[i] <- cntrst_n
       ns[i] <- length(node_obj[[cnddts[i]]][['kids']])
-      nms[i] <- node_obj[[cnddts[i]]][["nm"]][["scientific name"]]
+      nms <- node_obj[[cnddts[i]]][["nm"]]
+      sci_nms[i] <- nms[["scientific name"]]
+      if('genbank common name' %in% names(nms)) {
+        cmn_nms[i] <- nms[["genbank common name"]]
+      } else if('blast name' %in% names(nms)) {
+        cmn_nms[i] <- nms[["blast name"]]
+      } else {
+        cmn_nms[i] <- nms[["scientific name"]]
+      }
     }
     if(!is.null(node_obj[[cnddts[i]]][['ed']])) {
       eds[i] <- node_obj[[cnddts[i]]][['ed']]
@@ -41,13 +49,13 @@ genDataframe <- function(cnddts, node_obj) {
   cntrst_ns <- cntrst_ns[bool]
   tmsplts <- tmsplts[bool]
   cnddts <- cnddts[bool]
-  nms <- nms[bool]
+  sci_nms <- sci_nms[bool]
+  cmn_nms <- cmn_nms[bool]
   cntrst_chngs <- cntrst_chngs[bool]
-  chngs <- chngs[bool]
   eds <- eds[bool]
   ns <- ns[bool]
-  cld_data <- data.frame(nm=nms, txid=cnddts, tmsplt=tmsplts, cntrst_n=cntrst_ns,
-                         chng=chngs, ed=eds, cntrst_chng=cntrst_chngs, n=ns,
+  cld_data <- data.frame(nm=cmn_nms, scinm=sci_nms, txid=cnddts, tmsplt=tmsplts,
+                         cntrst_n=cntrst_ns, ed=eds, cntrst_chng=cntrst_chngs, n=ns,
                          stringsAsFactors=FALSE)
   cld_data
 }
