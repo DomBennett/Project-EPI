@@ -32,13 +32,31 @@ getTTOL <- function(id1, id2) {
   if(file.exists(fl)) {
     load(fl)
   } else {
-    url <- "http://www.timetree.org/search/pairwise/"
-    qry <- paste0(url, id1, '/', id2)
-    mean_ttol <- getMeanVal(searchURL(qry, site))
-    res <- mean_ttol
+    res <- searchByName(id1, id2)
+    if(is.na(res)) {
+      # NOT BEST SOLUTION, SHOULD REALLY CHANGE searchURL
+      R.utils::withTimeout(expr={
+        res <- searchByID(id1, id2)
+        }, timeout=10, onTimeout='silent')
+    }
     save(res, file=fl)
   }
   res
+}
+
+searchByName <- function(id1, id2) {
+  url <- "http://www.timetree.org/search/pairwise/"
+  nm1 <- node_obj[[id1]][['nm']][['scientific name']]
+  nm2 <- node_obj[[id2]][['nm']][['scientific name']]
+  qry <- paste0(url, nm1, '/', nm2)
+  getMeanVal(searchURL(qry, site="timetree"))
+}
+
+searchByID <- function(id1, id2) {
+  url <- "http://www.timetree.org/search/pairwise/"
+  qry <- paste0(url, id1, '/', id2)
+  # TODO: use names first, ids second
+  getMeanVal(searchURL(qry, site="timetree"))
 }
 
 getTmsplt <- function(txid) {
