@@ -150,6 +150,7 @@ readNexusData <- function(file) {
   char.block.dim <- getBlockData(label = "DIMENSIONS", char.block)
   char.block.format <- getBlockData(label = "FORMAT", char.block)
   tax.labels <- getBlockData(label = 'TAXLABELS', taxa.block)
+  char.labels <- getBlockData(label = 'CHARLABELS', char.block)
   matrix <- getBlockData(label = 'MATRIX', char.block)
   # extract datum from metadata blocks
   nchars <- getDatum(block = char.block.dim, name = 'nchar', numeric = TRUE)
@@ -159,5 +160,6 @@ readNexusData <- function(file) {
   # convert matrix
   matrix <- readMatrix(matrix = matrix, nchars = nchars, chars = chars, tax.labels = tax.labels,
                        gap = g.symbol, missing = m.symbol)
+  colnames(matrix) <- char.labels
   return (matrix)
 }

@@ -222,7 +222,7 @@ parsimonyReconstruction <- function(chars, phylo, order.numeric = TRUE,
     rownames(res) <- 1:(length(reduced.tree$tip.label) + reduced.tree$Nnode)
     if(!is.null(colnames(chars))) {
       res <- list(node.states = res, reduced.tree = reduced.tree,
-                   character.name = names(chars)[i])
+                   character.name = colnames(chars)[i])
     } else {
       res <- list(node.states = res, reduced.tree = reduced.tree,
                    character.name = paste0("Character [", i,"]"))

@@ -89,9 +89,10 @@ for(chng_fl in chng_fls) {
       }
     }
     cntrst_chngs <- chngs/sstr_chngs
-    cntrst_chngs[sstr_chngs == 0] <- 0 # avoid 0 NaN
+    names(cntrst_chngs) <- clades_change[['char_labels']]
+    cntrst_chngs <- cntrst_chngs[!is.na(cntrst_chngs)]
     cntr <- cntr + 1
-    node_obj[[txid]][['cntrst_chng']] <- mean(cntrst_chngs, na.rm=TRUE)
+    node_obj[[txid]][['cntrst_chng']] <- cntrst_chngs
   }
   cat("Done. Calculated contrast change for [", cntr, '/', length(txids),
       '] clades.\n')

@@ -35,6 +35,10 @@ char_names <- c(rownames(pantheria), rownames(oleary))
 char_names <- sort(unique(char_names))
 chars <- matrix(NA, nrow=length(char_names), ncol=ncol(oleary)+ncol(pantheria))
 rownames(chars) <- char_names
+pantheria_chars <- paste0('pantheria_', colnames(pantheria))
+oleary_chars <- sub('\\[[0-9]*\\]\\s', "", colnames(oleary))
+oleary_chars <- paste0('oleary_', oleary_chars)
+colnames(chars) <- c(pantheria_chars, oleary_chars)
 mis <- match(rownames(pantheria), char_names)
 for(i in 1:ncol(pantheria)) {
   chars[mis, i] <- pantheria[ ,i]
@@ -79,6 +83,9 @@ lislevand <- lislevand[, pull]
 livezy <- livezy[rownames(livezy) %in% genus_nms, ]
 mtchd <- match(genus_nms, rownames(livezy))
 chars <- cbind(lislevand, livezy[mtchd, ])
+livezy_chars <- sub('\\[[0-9]*\\]\\s', "", colnames(livezy))
+colnames(chars) <- c(paste0('lislevand_', colnames(lislevand)),
+                     paste0('livezy_', livezy_chars))
 trees <- read.tree(file.path(tree_dir, 'birds.tre'))
 tree <- consensus(trees)  # strict consensus tree
 rownames(chars) <- gsub(" ", "_", rownames(chars))

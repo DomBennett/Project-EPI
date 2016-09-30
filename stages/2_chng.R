@@ -47,6 +47,7 @@ for(phychr_file in phychr_files) {
   # convert non-numeric to numbers
   tmp_chars <- matrix(NA, nrow=nrow(chars), ncol=ncol(chars))
   rownames(tmp_chars) <- rownames(chars)
+  colnames(tmp_chars) <- colnames(chars)
   for(i in 1:ncol(chars)) {
     if(any(tolower(chars[ ,i]) %in% letters)) {
       tmp <- tolower(chars[ ,i])
@@ -63,6 +64,7 @@ for(phychr_file in phychr_files) {
   cat("    Estimating ancestral node states with parsimony .... ")
   # requires categorical variables
   reconstruction_obj <- parsimonyReconstruction(chars, tree)
+  char_labels <- sapply(reconstruction_obj, function(x) x[['character.name']])
   cat('Done\n')
   
   cat("    Calculating n. changes .... ")
@@ -75,6 +77,7 @@ for(phychr_file in phychr_files) {
                                     changes, tree)
   clades_phylo$changes <- changes_by_clade
   clades_change <- clades_phylo
+  clades_change[['char_labels']] <- char_labels
   cat('Done\n')
   
   cat("    Outputting ... ")
