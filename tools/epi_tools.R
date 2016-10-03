@@ -1,12 +1,27 @@
 
+getCntrstChngObj <- function(node_obj) {
+  txids <- ls(node_obj)
+  chngobj <- list()
+  chngobj[txids] <- NULL
+  for(txid in txids) {
+    # remonve infinite values and 0s
+    # I found 0s led to bimodal distribution in cntrst_chng
+    # these are more likely therefore to be driven by absent data
+    pull <- node_obj[[txid]][['cntrst_chng']] != 0 &
+      node_obj[[txid]][['cntrst_chng']] != Inf
+    chngobj[[txid]] <- node_obj[[txid]][['cntrst_chng']][pull]
+  }
+  chngobj <- chngobj[sapply(chngobj, length) > 0]
+  chngobj
+}
+
 genDataframe <- function(cnddts, node_obj) {
   # generate clade data frame for clades of interest
   # ensure sisters are accounted for in order to test autocorrelation
   cnddts <- cnddts[!duplicated(cnddts)]
   cnddts <- unique(unlist(sapply(cnddts,
                                  function(x) c(x, node_obj[[x]][['sstr']]))))
-  cmn_nms <- sci_nms <- tmsplts <- cntrst_ns <- cntrst_chngs <-
-    eds <- ns <- rep(NA, length(cnddts))
+  cmn_nms <- sci_nms <- tmsplts <- cntrst_ns <- eds <- ns <- rep(NA, length(cnddts))
   # loop through candidate IDs and extract info
   for(i in 1:length(cnddts)) {
     tmsplt <- node_obj[[cnddts[i]]][["tmsplt"]]
@@ -41,9 +56,6 @@ genDataframe <- function(cnddts, node_obj) {
     if(!is.null(node_obj[[cnddts[i]]][['ed']])) {
       eds[i] <- node_obj[[cnddts[i]]][['ed']]
     }
-    if(!is.null(node_obj[[cnddts[i]]][["cntrst_chng"]])) {
-      cntrst_chngs[i] <- node_obj[[cnddts[i]]][["cntrst_chng"]]
-    }
   }
   bool <- !is.na(cntrst_ns)
   cntrst_ns <- cntrst_ns[bool]
@@ -51,12 +63,10 @@ genDataframe <- function(cnddts, node_obj) {
   cnddts <- cnddts[bool]
   sci_nms <- sci_nms[bool]
   cmn_nms <- cmn_nms[bool]
-  cntrst_chngs <- cntrst_chngs[bool]
   eds <- eds[bool]
   ns <- ns[bool]
   cld_data <- data.frame(nm=cmn_nms, scinm=sci_nms, txid=cnddts, tmsplt=tmsplts,
-                         cntrst_n=cntrst_ns, ed=eds, cntrst_chng=cntrst_chngs, n=ns,
-                         stringsAsFactors=FALSE)
+                         cntrst_n=cntrst_ns, ed=eds,n=ns, stringsAsFactors=FALSE)
   cld_data
 }
 

@@ -17,7 +17,7 @@ source(file.path('tools', 'i_tools.R'))
 
 # DIRS
 cc_dir <- "8_cntrst_chng"
-tt_dir <- "7_timetree"
+tt_dir <- "archive/7_timetree_by_name"
 output_dir <- '9_epi'
 if (!file.exists(output_dir)) {
   dir.create(output_dir)
@@ -31,8 +31,12 @@ cat("Generating clade dataframe.... ")
 load(cc_file)
 cnddts <- ls(node_obj)
 cld_data <- genDataframe(cnddts, node_obj)
+chngobj <- getCntrstChngObj(node_obj)
 load(tt_file)
 cld_data <- rbind(cld_data, genDataframe(cnddts, node_obj))
+cld_data$cntrst_chng <- NA
+indxs <- match(names(chngobj), cld_data$txid)
+cld_data$cntrst_chng[indxs] <- sapply(chngobj, mean)
 rm(node_obj)
 cat("Done.\n")
 
@@ -61,12 +65,13 @@ cld_data <- cld_data[pull, ]
 cat("Adding taxonomic information .... ")
 txids <- cld_data[['txid']]
 cld_data$txnmcgrp <- NA
-mmls <- getGrpTxids(txids, "mammals")
-cld_data$txnmcgrp[cld_data$txid %in% mmls] <- 'mammal'
-brds <- getGrpTxids(txids, "birds")
-cld_data$txnmcgrp[cld_data$txid %in% brds] <- 'bird'
-lpdsrs <- getGrpTxids(txids, "lepidosaurs")
-cld_data$txnmcgrp[cld_data$txid %in% lpdsrs] <- 'lepidosaur'
+grps <- c('metazoa', 'vertebrates', "mammals",
+          "birds", "bony_fish", "lepidosaurs",
+          "amphibia", 'plants', 'arthropods')
+for(grp in grps) {
+  grpids <- getGrpTxids(txids, grp)
+  cld_data$txnmcgrp[cld_data$txid %in% grpids] <- grp
+}
 cat("Done.\n")
 
 # WIKI SEARCH
@@ -87,7 +92,7 @@ cat("Outputting ... ")
 top100 <- cld_data[order(cld_data[['pepi']])[1:100], ]
 write.csv(top100, file.path(output_dir, "top100.csv"), row.names=FALSE)
 #save(node_obj, cld_data, file=output_file)
-save(cld_data, file=output_file)
+save(cld_data, chngobj, file=output_file)
 cat('Done.\n')
 
 # END
