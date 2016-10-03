@@ -36,9 +36,16 @@ if (!'devtools' %in% packages) {
   install.packages ('devtools')
   counter <- counter + 1
 }
-if (!'MoreTreeTools' %in% packages) {
-  library (devtools)
-  install_github('DomBennett/MoreTreeTools')
+if(!'MoreTreeTools' %in% packages) {
+  devtools::install_github('DomBennett/MoreTreeTools', branch='edbmm')
+  counter <- counter + 1
+}
+if(!'treeman' %in% packages) {
+  install.packages('treeman')
+  counter <- counter + 1
+}
+if(!'R.utils' %in% packages) {
+  install.packages('R.utils')
   counter <- counter + 1
 }
 
