@@ -88,13 +88,23 @@ for(chng_fl in chng_fls) {
         sstr_chngs[j] <- mean(sapply(sstr_chngs_list, function(x) x[j]), na.rm=TRUE)
       }
     }
+    # gen change data frame
+    pull <- !is.na(sstr_chngs) & !is.na(chngs)
+    chngs <- chngs[pull]
+    sstr_chngs <- sstr_chngs[pull]
     cntrst_chngs <- chngs/sstr_chngs
-    names(cntrst_chngs) <- clades_change[['char_labels']]
-    cntrst_chngs <- cntrst_chngs[!is.na(cntrst_chngs)]
+    chng_data <- data.frame(chngs, sstr_chngs, cntrst_chngs)
+    rownames(chng_data) <- clades_change[['char_labels']][pull]
+    # contrasted proportion of characters that have
+    #  changed more than sister
+    pull <- !is.na(cntrst_chngs)
+    cntrst_chng <- sum(cntrst_chngs[pull] > 1) /
+      sum(cntrst_chngs[pull] < 1)
     cntr <- cntr + 1
-    node_obj[[txid]][['cntrst_chng']] <- cntrst_chngs
+    node_obj[[txid]][['cntrst_chng']] <- list('cntrst_chng'=cntrst_chng,
+                                              'chng_data'=chng_data)
   }
-  cat("Done. Calculated contrast change for [", cntr, '/', length(txids),
+  cat("Done. Calculated change for [", cntr, '/', length(txids),
       '] clades.\n')
 }
 
