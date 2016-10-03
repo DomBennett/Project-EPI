@@ -6,6 +6,9 @@ searchURL <- function(url, site) {
     res <- suppressWarnings(try(expr=readLines(url),
                                 silent=TRUE))
     if(class(res) != 'try-error') {
+      if(attmpts > 1) {
+        cat('---- Reconnected ----')
+      }
       unlink(url)
       break
     }
