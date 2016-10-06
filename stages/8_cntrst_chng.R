@@ -11,6 +11,7 @@ source('parameters.R')
 cat("Loading libraries ...\n")
 source(file.path('tools', 'node_obj_tools.R'))
 source(file.path('tools', 'clade_matching_tools.R'))
+source(file.path('tools', 'cntrst_chng_tools.R'))
 
 # DIRS
 chng_dir <- "2_chng"
@@ -95,11 +96,11 @@ for(chng_fl in chng_fls) {
     cntrst_chngs <- chngs/sstr_chngs
     chng_data <- data.frame(chngs, sstr_chngs, cntrst_chngs)
     rownames(chng_data) <- clades_change[['char_labels']][pull]
-    # contrasted proportion of characters that have
-    #  changed more than sister
-    pull <- !is.na(cntrst_chngs)
-    cntrst_chng <- sum(cntrst_chngs[pull] > 1) /
-      sum(cntrst_chngs[pull] < 1)
+    chng_data$nstates <- clades_change[['char_nstates']][pull]
+    chng_data$rsqs <- lookUpRsqs(rownames(chng_data))
+    # weighted mean cntrst chng
+    wts <- (1/chng_data$nstates)/chng_data$rsqs
+    cntrst_chng <- weighted.mean(cntrst_chngs, w=wts, na.rm=TRUE)
     cntr <- cntr + 1
     node_obj[[txid]][['cntrst_chng']] <- list('cntrst_chng'=cntrst_chng,
                                               'chng_data'=chng_data)
