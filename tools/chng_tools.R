@@ -1,4 +1,19 @@
 
+calcRsqs <- function(chars, parallel=FALSE) {
+  # Calculate rsqs for every possible combination of character
+  # Return list of combinations + rsq
+  .calc <- function(i) {
+    c1 <- chars[,cmbs[1,i]]
+    c2 <- chars[,cmbs[2,i]]
+    pull <- !is.na(c1) & !is.na(c2)
+    tst_res <- suppressWarnings(cor.test(c1[pull], c2[pull]))
+    abs(tst_res$estimate[[1]])
+  }
+  cmbs <- combn(x=colnames(chars), m=2)
+  rsqs <- plyr::maply(1:ncol(cmbs), .fun=.calc, .parallel=parallel)
+  list('cmbs'=cmbs, 'rsq'=rsqs)
+}
+
 matchClades <- function(q_clade_obj, s_clade_obj) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.
@@ -113,13 +128,10 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
       nds <- r.phylo$edge[connecting.edge, ]
       start <- r.node.states[nds[1], ]
       end <- r.node.states[nds[2], ]
-      if(is.numeric(start)) { # for ordered states
-        change <- abs(sum(start) - sum(end))/2
-      } else { # for unordered states
-        change <- sum(start != end)/2
-      }
-      change
+      score <- (1 + abs(sum(start) - sum(end))/2)/(nstates+1)
+      score
     }
+    nstates <- max(part.reconstruction.obj[['node.states']])
     r.node.states <- part.reconstruction.obj[['node.states']]
     r.phylo <- part.reconstruction.obj[['reduced.tree']]
     r.clade.node <- MoreTreeTools::getClades(r.phylo)

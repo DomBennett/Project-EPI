@@ -58,6 +58,17 @@ for(phychr_file in phychr_files) {
   chars <- tmp_chars
   rm(tmp_chars)
   nspp <- sum(rowSums(!is.na(chars)) > 0)
+  # if any are negative, raise my min
+  min_states <- apply(chars, 2, min, na.rm=TRUE)
+  if(any(min_states < 0)) {
+    addition_mtrx <- matrix(abs(min_states[min_states < 0]),
+                            nrow=nrow(chars),
+                            ncol=sum(min_states < 0),
+                            byrow=TRUE)
+    chars[ ,min_states < 0] <- chars[,min_states < 0] +
+      addition_mtrx
+  }
+  nstates <- apply(chars, 2, max, na.rm=TRUE)
   cat('Done, found [', ncol(chars), '] characters for [', 
       nspp, '/', length(tree$tip.label), '] tips\n', sep="")
   
@@ -65,9 +76,14 @@ for(phychr_file in phychr_files) {
   # requires categorical variables
   reconstruction_obj <- parsimonyReconstruction(chars, tree)
   char_labels <- sapply(reconstruction_obj, function(x) x[['character.name']])
+  nstates <- nstates[char_labels]
   cat('Done\n')
   
-  cat("    Calculating n. changes .... ")
+  cat("    Calculating all pairwise R^2s .... ")
+  rsq_obj <- calcRsqs(chars, parallel=TRUE)
+  cat('Done\n')
+  
+  cat("    Calculating change scores .... ")
   changes <- calcChange(tree, reconstruction_obj, parallel=TRUE)
   cat('Done\n')
   
@@ -78,10 +94,11 @@ for(phychr_file in phychr_files) {
   clades_phylo$changes <- changes_by_clade
   clades_change <- clades_phylo
   clades_change[['char_labels']] <- char_labels
+  clades_change[['char_nstates']] <- nstates
   cat('Done\n')
   
   cat("    Outputting ... ")
-  save(clades_change, file=file.path(output_dir, phychr_file))
+  save(clades_change, rsq_obj, file=file.path(output_dir, phychr_file))
   cat("Done.\n")
 }
 
