@@ -6,8 +6,11 @@ calcRsqs <- function(chars, parallel=FALSE) {
     c1 <- chars[,cmbs[1,i]]
     c2 <- chars[,cmbs[2,i]]
     pull <- !is.na(c1) & !is.na(c2)
-    tst_res <- suppressWarnings(cor.test(c1[pull], c2[pull]))
-    abs(tst_res$estimate[[1]])
+    if(sum(pull) > 20) {
+      tst_res <- suppressWarnings(cor.test(c1[pull], c2[pull]))
+      return(abs(tst_res$estimate[[1]]))
+    }
+    NA
   }
   cmbs <- combn(x=colnames(chars), m=2)
   rsqs <- plyr::maply(1:ncol(cmbs), .fun=.calc, .parallel=parallel)
