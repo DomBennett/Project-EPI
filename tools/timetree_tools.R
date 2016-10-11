@@ -34,6 +34,7 @@ getTTOL <- function(id1, id2) {
   } else {
     res <- searchByName(id1, id2)
     if(is.na(res)) {
+      cat('.... .... trying by ID\n')
       # NOT BEST SOLUTION, SHOULD REALLY CHANGE searchURL
       R.utils::withTimeout(expr={
         res <- searchByID(id1, id2)
@@ -49,6 +50,7 @@ searchByName <- function(id1, id2) {
   nm1 <- node_obj[[id1]][['nm']][['scientific name']]
   nm2 <- node_obj[[id2]][['nm']][['scientific name']]
   qry <- paste0(url, nm1, '/', nm2)
+  qry <- gsub("\\s+", "%20", qry)  # remove spaces
   getMeanVal(searchURL(qry, site="timetree"))
 }
 

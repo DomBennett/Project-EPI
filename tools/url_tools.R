@@ -12,12 +12,12 @@ searchURL <- function(url, site) {
       unlink(url)
       break
     }
-    attmpts <- attmpts + 1
     cat('----- Failed to reach, [', site, '] trying again in [',
         wt[attmpts], 's] -----\n', sep='')
+    attmpts <- attmpts + 1
   }
   if(attmpts > length(wt)) {
-    stop("---- Max attempts made, server must be down ----")
+    cat("---- Max attempts made, server must be down ----")
   }
   res
 }
