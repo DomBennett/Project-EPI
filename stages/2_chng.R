@@ -22,6 +22,7 @@ if(!file.exists(output_dir)) {
 
 # INPUT
 phychr_files <- list.files(input_dir, pattern=".RData")
+phychr_files <- phychr_files[length(phychr_files):1]
 
 # LOOP THROUGH TREE FILES
 cat("Looping through all published trees and character sets ....\n")

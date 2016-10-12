@@ -8,12 +8,15 @@ calcRsqs <- function(chars, parallel=FALSE) {
     pull <- !is.na(c1) & !is.na(c2)
     if(sum(pull) > 20) {
       tst_res <- suppressWarnings(cor.test(c1[pull], c2[pull]))
-      return(abs(tst_res$estimate[[1]]))
     }
-    NA
+    return(abs(tst_res$estimate[[1]]))
   }
+  pull <- colSums(!is.na(chars)) > 20
+  chars <- chars[ ,pull]
   cmbs <- combn(x=colnames(chars), m=2)
   rsqs <- plyr::maply(1:ncol(cmbs), .fun=.calc, .parallel=parallel)
+  cmbs <- cmbs[, !is.na(rsqs)]
+  rsqs <- rsqs[!is.na(rsqs)]
   list('cmbs'=cmbs, 'rsq'=rsqs)
 }
 
