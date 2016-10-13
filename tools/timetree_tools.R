@@ -16,11 +16,20 @@ if(!file.exists(tmsplt_dir)) {
 # FUNCTIONS
 getMeanVal <- function(lns) {
   res <- NA
-  for(ln in lns) {
-    if(grepl('class="time"', ln) &
-      grepl('TTOL', ln)) {
-      res <- gsub("<[^>]*>", "", ln)
-      res <- as.numeric(gsub("[^\\.0-9]", "", res))
+  for(i in 2:length(lns)) {
+    if(grepl('pairwise-results', lns[i])) {
+      for(j in i:(i+20)) {
+        if(grepl('TTOL', lns[j])) {
+          break
+        }
+      }
+      for(k in j:i) {
+        if(grepl('MYA', lns[k], ignore.case = FALSE)) {
+          res <- gsub("<[^>]*>", "", lns[k])
+          res <- as.numeric(gsub("[^\\.0-9]", "", res))
+          break
+        }
+      }
     }
   }
   res
@@ -32,33 +41,17 @@ getTTOL <- function(id1, id2) {
   if(file.exists(fl)) {
     load(fl)
   } else {
-    res <- searchByName(id1, id2)
-    if(is.na(res)) {
-      cat('.... .... trying by ID\n')
-      # NOT BEST SOLUTION, SHOULD REALLY CHANGE searchURL
-      R.utils::withTimeout(expr={
-        res <- searchByID(id1, id2)
-        }, timeout=10, onTimeout='silent')
-    }
+    res <- searchByID(id1, id2)
     save(res, file=fl)
   }
   res
 }
 
-searchByName <- function(id1, id2) {
-  url <- "http://www.timetree.org/search/pairwise/"
-  nm1 <- node_obj[[id1]][['nm']][['scientific name']]
-  nm2 <- node_obj[[id2]][['nm']][['scientific name']]
-  qry <- paste0(url, nm1, '/', nm2)
-  qry <- gsub("\\s+", "%20", qry)  # remove spaces
-  getMeanVal(searchURL(qry, site="timetree"))
-}
-
 searchByID <- function(id1, id2) {
-  url <- "http://www.timetree.org/search/pairwise/"
+  url <- "http://www.timetree.org/ajax/pairwise/"
   qry <- paste0(url, id1, '/', id2)
-  # TODO: use names first, ids second
-  getMeanVal(searchURL(qry, site="timetree"))
+  lns <- searchURL(qry, site="timetree")
+  getMeanVal(lns)
 }
 
 getTmsplt <- function(txid) {

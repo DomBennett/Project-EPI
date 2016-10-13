@@ -32,7 +32,6 @@ cnddts <- cnddts[cnddts %in% txids]
 cc <- 0
 cat('    [', length(cnddts), '] txids to search for ....\n',
     sep='')
-wt <- c(3, 3, 3)  # reduce maximum attempts, two methods of querying timetree, ID or name. one doesn't work
 for(i in 1:length(cnddts)) {
   txid <- cnddts[i]
   iPrnt(i, length(cnddts))
