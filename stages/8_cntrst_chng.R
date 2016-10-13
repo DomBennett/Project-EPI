@@ -97,7 +97,7 @@ for(chng_fl in chng_fls) {
     chng_data <- data.frame(chngs, sstr_chngs, cntrst_chngs)
     rownames(chng_data) <- clades_change[['char_labels']][pull]
     chng_data$nstates <- clades_change[['char_nstates']][pull]
-    chng_data$rsqs <- lookUpRsqs(rownames(chng_data))
+    chng_data$rsqs <- rowMeans(rsqs[nms, ], na.rm=TRUE)
     # weighted mean cntrst chng
     wts <- (1/chng_data$nstates)/chng_data$rsqs
     cntrst_chng <- weighted.mean(cntrst_chngs, w=wts, na.rm=TRUE)

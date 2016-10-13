@@ -81,7 +81,8 @@ for(phychr_file in phychr_files) {
   cat('Done\n')
   
   cat("    Calculating all pairwise R^2s .... ")
-  rsq_obj <- calcRsqs(chars, parallel=TRUE)
+  # non-normal, categorical data, using spearman
+  rsqs <- suppressWarnings(cor(chars, use="pairwise.complete.obs", method='spearman'))
   cat('Done\n')
   
   cat("    Calculating change scores .... ")
@@ -99,7 +100,7 @@ for(phychr_file in phychr_files) {
   cat('Done\n')
   
   cat("    Outputting ... ")
-  save(clades_change, rsq_obj, file=file.path(output_dir, phychr_file))
+  save(clades_change, rsqs, file=file.path(output_dir, phychr_file))
   cat("Done.\n")
 }
 

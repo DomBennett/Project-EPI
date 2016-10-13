@@ -1,25 +1,3 @@
-
-calcRsqs <- function(chars, parallel=FALSE) {
-  # Calculate rsqs for every possible combination of character
-  # Return list of combinations + rsq
-  .calc <- function(i) {
-    c1 <- chars[,cmbs[1,i]]
-    c2 <- chars[,cmbs[2,i]]
-    pull <- !is.na(c1) & !is.na(c2)
-    if(sum(pull) > 20) {
-      tst_res <- suppressWarnings(cor.test(c1[pull], c2[pull]))
-    }
-    return(abs(tst_res$estimate[[1]]))
-  }
-  pull <- colSums(!is.na(chars)) > 20
-  chars <- chars[ ,pull]
-  cmbs <- combn(x=colnames(chars), m=2)
-  rsqs <- plyr::maply(1:ncol(cmbs), .fun=.calc, .parallel=parallel)
-  cmbs <- cmbs[, !is.na(rsqs)]
-  rsqs <- rsqs[!is.na(rsqs)]
-  list('cmbs'=cmbs, 'rsq'=rsqs)
-}
-
 matchClades <- function(q_clade_obj, s_clade_obj) {
   # Phylogenies may have different numbers of species, as such node numbers will not be
   #  directly comparable. This function matchs nodes between phylogenies using clade names.
