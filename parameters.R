@@ -48,10 +48,15 @@ try_again <- FALSE  # saves time split dates to prevent excessive searches,
 # IGNORE PATTERNS
 # Ignore nodes that are not true "natural" biological entities
 # Ignore extinct taxa
+# Ignore names with numbers, not named = not described
+# Avoid names with qualifications
 ignore_pttrns <- c("unclassified",       # unclassified biological entities
                    "unassigned",         # unassigned biological entities
                    "\\sx\\s",            # species crosses
                    "incertae sedis",     # uncertain taxonomic group
+                   "[0-9]",              # unnamed species, groups
+                   "environmental",      # avoid environmental samples
+                   "vouchered",          # not taxonomic grouping
                    "toxodon",            # extinct
                    "macrauchenia",       # extinct
                    "brachylophosaurus",  # extinct
