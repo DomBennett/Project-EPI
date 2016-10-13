@@ -129,11 +129,9 @@ for(txid in txids) {
   if(!is.null(sstrs) && length(sstrs) > 0) {
     n <- length(node_obj[[txid]][['kids']])
     if(n > 0) {
-      sstr_n <- 0
       # calculate based on the maximum possible sstr_n
-      for(j in 1:length(sstrs)) {
-        sstr_n <- sstr_n + length(node_obj[[sstrs[j]]][['kids']])
-      }
+      sstr_n <- max(sapply(sstrs, function(x) length(node_obj[[x]][['kids']])))
+      node_obj[[txid]][['sstr_n']] <- sstr_n
       node_obj[[txid]][['cntrst_n']] <- n/sstr_n
     }
   }
