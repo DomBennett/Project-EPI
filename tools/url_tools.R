@@ -11,7 +11,7 @@ searchURL <- function(url, site) {
       # break connection if takes more than 30s
       return(NA)
     }
-    if(grepl("cannot open the connection", res[[1]])) {
+    if(!grepl("cannot open the connection", res[[1]])) {
       if(attmpts > 1) {
         cat('---- Reconnected ----')
       }
