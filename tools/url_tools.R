@@ -12,7 +12,7 @@ searchURL <- function(url, site) {
       unlink(url)
       break
     }
-    cat('----- Failed to reach, [', site, '] trying again in [',
+    cat('----- Failed to reach, [', url, '] trying again in [',
         wt[attmpts], 's] -----\n', sep='')
     attmpts <- attmpts + 1
   }

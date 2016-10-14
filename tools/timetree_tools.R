@@ -57,9 +57,11 @@ searchByID <- function(id1, id2) {
 getTmsplt <- function(txid) {
   # Return time since split based on divergence from sister
   fl <- file.path(tmsplt_dir, paste0(txid, ".RData"))
-  if(file.exists(fl) & !try_again) {
+  if(file.exists(fl)) {
     load(fl)
-    return(tmsplt)
+    if(!try_again | !is.na(tmsplt)) {
+      return(tmsplt)
+    }
   }
   sstrs <- node_obj[[txid]][['sstr']]
   tmsplt <- getTTOL(txid, sstrs[1])
