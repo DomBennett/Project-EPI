@@ -11,7 +11,6 @@ source('parameters.R')
 cat("Loading libraries ...\n")
 source(file.path('tools', 'node_obj_tools.R'))
 source(file.path('tools', 'clade_matching_tools.R'))
-source(file.path('tools', 'cntrst_chng_tools.R'))
 
 # DIRS
 chng_dir <- "2_chng"
