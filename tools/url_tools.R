@@ -3,11 +3,12 @@ searchURL <- function(url, site) {
   attmpts <- 1
   while(attmpts <= length(wt)) {
     Sys.sleep(wt[attmpts])
+    res <- NA
     R.utils::withTimeout(expr={
       res <- suppressWarnings(try(expr=readLines(url),
                                   silent=TRUE))
       }, timeout=30, onTimeout='silent')
-    if(grepl("reached elapsed time limit", res[[1]])) {
+    if(is.na(res)) {
       # break connection if takes more than 30s
       return(NA)
     }
