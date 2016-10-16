@@ -115,7 +115,7 @@ calcChange <- function(f.phylo, reconstruction.obj, weight.by.edge = TRUE,
       score <- (1 + abs(sum(start) - sum(end))/2)/(nstates+1)
       score
     }
-    nstates <- max(part.reconstruction.obj[['node.states']])
+    nstates <- length(unique(round(part.reconstruction.obj[['node.states']])))
     r.node.states <- part.reconstruction.obj[['node.states']]
     r.phylo <- part.reconstruction.obj[['reduced.tree']]
     r.clade.node <- MoreTreeTools::getClades(r.phylo)

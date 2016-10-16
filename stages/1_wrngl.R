@@ -86,6 +86,8 @@ chars <- cbind(lislevand, livezy[mtchd, ])
 livezy_chars <- sub('\\[[0-9]*\\]\\s', "", colnames(livezy))
 colnames(chars) <- c(paste0('lislevand_', colnames(lislevand)),
                      paste0('livezy_', livezy_chars))
+Encoding(colnames(chars)) <- "latin1"
+colnames(chars) <- iconv(colnames(chars), "latin1", "ASCII", sub="")
 trees <- read.tree(file.path(tree_dir, 'birds.tre'))
 tree <- consensus(trees)  # strict consensus tree
 rownames(chars) <- gsub(" ", "_", rownames(chars))

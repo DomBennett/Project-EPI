@@ -75,34 +75,40 @@ for(chng_fl in chng_fls) {
     }
     sstr_i <- which(txids %in% sstr)
     chngs <- clades_change[['changes']][[mtch_indx[i]]]
+    chngs$sstr <- NA
+    char_labels <- rownames(chngs)
     if(all(is.na(chngs))) {
       next
     }
     if(length(sstr_i) == 1) {
       sstr_chngs <- clades_change[['changes']][[mtch_indx[sstr_i]]]
+      chngs$sstr <- sstr_chngs[['chng']][match(char_labels, rownames(sstr_chngs))]
     } else {
       sstr_chngs <- rep(NA, length(chngs))
+      # unpack
       sstr_chngs_list <- lapply(sstr_i,
                                 function(x) clades_change[['changes']][[mtch_indx[x]]])
-      for(j in 1:length(chngs)) {
-        sstr_chngs[j] <- mean(sapply(sstr_chngs_list, function(x) x[j]), na.rm=TRUE)
+      # create list of vectors
+      sstr_chngs <- vector("list", length=length(sstr_chngs_list))
+      for(j in 1:length(sstr_chngs_list)) {
+        sstr_chngs[[j]] <-  sstr_chngs_list[[j]][['chng']][match(char_labels, rownames(sstr_chngs))]
       }
+      # create vector of means
+      sstr_chng <- rep(NA, length(char_labels))
+      for(j in 1:length(char_labels)) {
+        sstr_chng[j] <- mean(sapply(sstr_chngs, function(x) x[j]), na.rm=TRUE)
+      }
+      chngs$sstr <- sstr_chng
     }
-    # gen change data frame
-    pull <- !is.na(sstr_chngs) & !is.na(chngs)
-    chngs <- chngs[pull]
-    sstr_chngs <- sstr_chngs[pull]
-    cntrst_chngs <- chngs/sstr_chngs
-    chng_data <- data.frame(chngs, sstr_chngs, cntrst_chngs)
-    rownames(chng_data) <- clades_change[['char_labels']][pull]
-    chng_data$nstates <- clades_change[['char_nstates']][pull]
-    chng_data$rsqs <- rowMeans(rsqs[nms, ], na.rm=TRUE)
+    chngs <- chngs[!is.na(chngs$sstr), ]
+    chngs$rsq <- rowMeans(rsqs[rownames(chars), ], na.rm=TRUE)
+    chngs$cntrst_chng <- chngs$chng/chngs$sstr
     # weighted mean cntrst chng
-    wts <- (1/chng_data$nstates)/chng_data$rsqs
-    cntrst_chng <- weighted.mean(cntrst_chngs, w=wts, na.rm=TRUE)
+    wts <- (1/chngs$nstate)/chngs$rsq
+    cntrst_chng <- weighted.mean(chngs$cntrst_chng, w=wts, na.rm=TRUE)
     cntr <- cntr + 1
     node_obj[[txid]][['cntrst_chng']] <- list('cntrst_chng'=cntrst_chng,
-                                              'chng_data'=chng_data)
+                                              'chng_data'=chngs)
   }
   cat("Done. Calculated change for [", cntr, '/', length(txids),
       '] clades.\n')
