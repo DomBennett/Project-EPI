@@ -1,25 +1,28 @@
-searchURL <- function(url, site) {
+searchURL <- function(qry_url, site) {
   # Safely search for a url, re-try if not accessible
   attmpts <- 1
+  res <- NA
   while(attmpts <= length(wt)) {
     Sys.sleep(wt[attmpts])
-    res <- NA
-    R.utils::withTimeout(expr={
-      res <- suppressWarnings(try(expr=readLines(url),
-                                  silent=TRUE))
-      }, timeout=30, onTimeout='silent')
-    if(is.na(res) || grepl("reached elapsed time limit", res[[1]])) {
-      # break connection if takes more than 30s
+    suppressWarnings(try_err <- try(expr={
+      cnnctn <- R.utils::withTimeout(expr={
+        url(description=qry_url, open='r')
+      }, timeout=10, onTimeout='error')
+    }, silent=TRUE))
+    if(grepl('reached elapsed time limit', try_err[[1]])) {
       return(NA)
     }
-    if(!grepl("cannot open the connection", res[[1]])) {
-      if(attmpts > 1) {
-        cat('---- Reconnected ----')
+    if(class(try_err) != 'try-error') {
+      if(file.exists('cnnctn') && !is.null(cnnctn) && isOpen(cnnctn)) {
+        if(attmpts > 1) {
+          cat('---- Reconnected ----')
+        }
+        res <- readLines(con=cnnctn)
+        close(cnnctn)
       }
-      unlink(url)
       break
     }
-    cat('----- Failed to reach, [', url, '] trying again in [',
+    cat('----- Failed to reach, [', qry_url, '] trying again in [',
         wt[attmpts], 's] -----\n', sep='')
     attmpts <- attmpts + 1
   }
@@ -28,3 +31,6 @@ searchURL <- function(url, site) {
   }
   res
 }
+
+searchURL(qry_url='http://www.timetree.org/ajax/pairwise/1839748/1031332')
+rm(try_err, res, cnnctn)
