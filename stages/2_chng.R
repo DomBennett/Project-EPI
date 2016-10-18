@@ -73,6 +73,7 @@ for(phychr_file in phychr_files) {
   cat("    Calculating all pairwise R^2s .... ")
   # non-normal, categorical data, using spearman
   rsqs <- suppressWarnings(cor(chars, use="pairwise.complete.obs", method='spearman'))
+  rsqs <- abs(rsqs)
   cat('Done\n')
   
   cat("    Calculating change scores .... ")

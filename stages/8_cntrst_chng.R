@@ -6,6 +6,7 @@ cat(paste0('\nStage `contrast change` started at [', Sys.time(), ']\n'))
 # PARAMETERS
 cat("Loading parameters ...\n")
 source('parameters.R')
+min_nchars <- 4
 
 # LIBS
 cat("Loading libraries ...\n")
@@ -34,6 +35,7 @@ for(chng_fl in chng_fls) {
   spp <- getSppTxids(txids)
   txids_wchng <- NULL
   load(file.path(chng_dir, chng_fl))
+  rsqs <- abs(rsqs)
   
   # MATCH
   cat("    Matching change estimates nodes in node_obj.... ")
@@ -75,16 +77,15 @@ for(chng_fl in chng_fls) {
     }
     sstr_i <- which(txids %in% sstr)
     chngs <- clades_change[['changes']][[mtch_indx[i]]]
-    chngs$sstr <- NA
-    char_labels <- rownames(chngs)
-    if(all(is.na(chngs))) {
+    if(nrow(chngs) < min_nchars) {
       next
     }
+    chngs$sstr <- NA
+    char_labels <- rownames(chngs)
     if(length(sstr_i) == 1) {
       sstr_chngs <- clades_change[['changes']][[mtch_indx[sstr_i]]]
       chngs$sstr <- sstr_chngs[['chng']][match(char_labels, rownames(sstr_chngs))]
     } else {
-      sstr_chngs <- rep(NA, length(chngs))
       # unpack
       sstr_chngs_list <- lapply(sstr_i,
                                 function(x) clades_change[['changes']][[mtch_indx[x]]])
@@ -101,10 +102,14 @@ for(chng_fl in chng_fls) {
       chngs$sstr <- sstr_chng
     }
     chngs <- chngs[!is.na(chngs$sstr), ]
-    chngs$rsq <- rowMeans(rsqs[rownames(chars), ], na.rm=TRUE)
+    if(nrow(chngs) < min_nchars) {
+      next
+    }
+    chngs$rsq <- rowMeans(rsqs[rownames(chngs), ], na.rm=TRUE)
+    chngs$rsq[is.na(chngs$rsq)] <- 0
     chngs$cntrst_chng <- chngs$chng/chngs$sstr
     # weighted mean cntrst chng
-    wts <- (1/chngs$nstate)/chngs$rsq
+    wts <- (1/chngs$nstate)*(1-chngs$rsq)
     cntrst_chng <- weighted.mean(chngs$cntrst_chng, w=wts, na.rm=TRUE)
     cntr <- cntr + 1
     node_obj[[txid]][['cntrst_chng']] <- list('cntrst_chng'=cntrst_chng,

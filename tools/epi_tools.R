@@ -1,18 +1,28 @@
 
-getCntrstChngObj <- function(node_obj) {
-  txids <- ls(node_obj)
-  chngobj <- list()
-  chngobj[txids] <- NULL
-  for(txid in txids) {
-    # remonve infinite values and 0s
-    # I found 0s led to bimodal distribution in cntrst_chng
-    # these are more likely therefore to be driven by absent data
-    pull <- node_obj[[txid]][['cntrst_chng']] != 0 &
-      node_obj[[txid]][['cntrst_chng']] != Inf
-    chngobj[[txid]] <- node_obj[[txid]][['cntrst_chng']][pull]
+getCntrstChng <- function(txids, node_obj) {
+  res <- rep(NA, length(txids))
+  for(i in 1:length(txids)) {
+    txid <- txids[i]
+    cchng <- node_obj[[txid]][['cntrst_chng']][['cntrst_chng']]
+    if(!is.null(cchng)) {
+      res[i] <- cchng
+    }
   }
-  chngobj <- chngobj[sapply(chngobj, length) > 0]
-  chngobj
+  res
+}
+
+getNChars <- function(txids, node_obj) {
+  res <- rep(NA, length(txids))
+  for(i in 1:length(txids)) {
+    txid <- txids[i]
+    chng_data <- node_obj[[txid]][['cntrst_chng']][['chng_data']]
+    if(!is.null(chng_data)) {
+      res[i] <- nrow(chng_data)
+    } else {
+      res[i] <- 0
+    }
+  }
+  res
 }
 
 genDataframe <- function(cnddts, node_obj) {
