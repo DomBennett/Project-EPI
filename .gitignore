@@ -19,6 +19,7 @@ test*
 *log*
 caches/
 *.RData
+*.RDataTmp
 *.csv
 0_data/
 *.xlsx
