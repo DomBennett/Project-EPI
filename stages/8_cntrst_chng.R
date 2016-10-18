@@ -92,12 +92,18 @@ for(chng_fl in chng_fls) {
       # create list of vectors
       sstr_chngs <- vector("list", length=length(sstr_chngs_list))
       for(j in 1:length(sstr_chngs_list)) {
-        sstr_chngs[[j]] <-  sstr_chngs_list[[j]][['chng']][match(char_labels, rownames(sstr_chngs))]
+        tmp_chng_data <- sstr_chngs_list[[j]]
+        sstr_chngs[[j]] <-  tmp_chng_data[['chng']][match(char_labels, rownames(tmp_chng_data))]
       }
       # create vector of means
       sstr_chng <- rep(NA, length(char_labels))
       for(j in 1:length(char_labels)) {
-        sstr_chng[j] <- mean(sapply(sstr_chngs, function(x) x[j]), na.rm=TRUE)
+        sstr_vals <- sapply(sstr_chngs, function(x) x[j])
+        if(all(is.na(sstr_vals))) {
+          sstr_chng[j] <- NA
+        } else {
+          sstr_chng[j]<- max(sstr_vals, na.rm=TRUE)
+        }
       }
       chngs$sstr <- sstr_chng
     }
