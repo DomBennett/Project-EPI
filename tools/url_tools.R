@@ -13,7 +13,7 @@ searchURL <- function(qry_url, site) {
       return(NA)
     }
     if(class(try_err) != 'try-error') {
-      if(file.exists('cnnctn') && !is.null(cnnctn) && isOpen(cnnctn)) {
+      if(exists('cnnctn') && !is.null(cnnctn) && isOpen(cnnctn)) {
         if(attmpts > 1) {
           cat('---- Reconnected ----')
         }
@@ -31,6 +31,3 @@ searchURL <- function(qry_url, site) {
   }
   res
 }
-
-searchURL(qry_url='http://www.timetree.org/ajax/pairwise/1839748/1031332')
-rm(try_err, res, cnnctn)
