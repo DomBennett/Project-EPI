@@ -50,7 +50,7 @@ getTTOL <- function(id1, id2) {
 searchByID <- function(id1, id2) {
   url <- "http://www.timetree.org/ajax/pairwise/"
   qry <- paste0(url, id1, '/', id2)
-  lns <- searchURL(qry, site="timetree")
+  lns <- searchURL(qry)
   getMeanVal(lns)
 }
 
