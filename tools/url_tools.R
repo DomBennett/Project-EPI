@@ -8,7 +8,7 @@ searchURL <- function(url, site) {
       res <- suppressWarnings(try(expr=readLines(url),
                                   silent=TRUE))
       }, timeout=30, onTimeout='silent')
-    if(is.na(res)) {
+    if(is.na(res) || grepl("reached elapsed time limit", res[[1]])) {
       # break connection if takes more than 30s
       return(NA)
     }
