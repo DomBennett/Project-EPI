@@ -1,25 +1,29 @@
-searchURL <- function(qry_url, site) {
+searchURL <- function(qry_url, timeout=10) {
   # Safely search for a url, re-try if not accessible
   attmpts <- 1
   res <- NA
   while(attmpts <= length(wt)) {
     Sys.sleep(wt[attmpts])
+    # why does R insist on making this the ugliest and most complicated of code?!?!?
     suppressWarnings(try_err <- try(expr={
       cnnctn <- R.utils::withTimeout(expr={
         url(description=qry_url, open='r')
-      }, timeout=10, onTimeout='error')
+      }, timeout=timeout, onTimeout='error')
     }, silent=TRUE))
     if(grepl('reached elapsed time limit', try_err[[1]])) {
       return(NA)
     }
-    if(class(try_err) != 'try-error') {
-      if(exists('cnnctn') && !is.null(cnnctn) && isOpen(cnnctn)) {
-        if(attmpts > 1) {
-          cat('---- Reconnected ----')
-        }
-        res <- readLines(con=cnnctn)
-        close(cnnctn)
+    if(exists('cnnctn') && !is.null(cnnctn)) {
+      is_open <- try(expr={
+        isOpen(cnnctn)
+      }, silent=TRUE)
+    }
+    if(class(is_open) != 'try-error' && is_open) {
+      if(attmpts > 1) {
+        cat('---- Reconnected ----')
       }
+      res <- readLines(con=cnnctn)
+      close(cnnctn)
       break
     }
     cat('----- Failed to reach, [', qry_url, '] trying again in [',

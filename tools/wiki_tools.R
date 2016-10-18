@@ -32,7 +32,7 @@ getWikiLFMention <- function(txid) {
   res <- NA
   url <- "http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id="
   qry <- paste0(url, txid)
-  ncbi_page <- searchURL(qry, site='NCBI taxonomy')
+  ncbi_page <- searchURL(qry)
   wiki_url <- getWikiUrl(ncbi_page)
   if(!is.na(wiki_url)) {
     res <- FALSE
@@ -40,7 +40,7 @@ getWikiLFMention <- function(txid) {
     if(grepl('http:', wiki_url)) {
       wiki_url <- sub('http:', 'https:', wiki_url)
     }
-    wiki_page <- searchURL(wiki_url, site='Wikipedia')
+    wiki_page <- searchURL(wiki_url)
     for(ln in wiki_page) {
       if(grepl('living fossil', ln, ignore.case=TRUE)) {
         res <- TRUE
