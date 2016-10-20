@@ -1,4 +1,11 @@
 
+simpleCap <- function(x) {
+  # http://stackoverflow.com/questions/6364783/capitalize-the-first-letter-of-both-words-in-a-two-word-string
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1,1)), substring(s, 2),
+        sep="", collapse=" ")
+}
+
 getCntrstChng <- function(txids, node_obj) {
   res <- rep(NA, length(txids))
   for(i in 1:length(txids)) {
@@ -55,12 +62,13 @@ genDataframe <- function(cnddts, node_obj) {
       ns[i] <- length(node_obj[[cnddts[i]]][['kids']])
       nms <- node_obj[[cnddts[i]]][["nm"]]
       sci_nms[i] <- nms[["scientific name"]]
+      blastname_bool <- grepl('blast', names(nms))
       if('genbank common name' %in% names(nms)) {
         cmn_nms[i] <- nms[["genbank common name"]]
-      } else if('blast name' %in% names(nms)) {
-        cmn_nms[i] <- nms[["blast name"]]
+      } else if(any(blastname_bool)) {
+        cmn_nms[i] <- simpleCap(nms[[which(blastname_bool)]])
       } else {
-        cmn_nms[i] <- nms[["scientific name"]]
+        cmn_nms[i] <- ""
       }
     }
     if(!is.null(node_obj[[cnddts[i]]][['ed']])) {

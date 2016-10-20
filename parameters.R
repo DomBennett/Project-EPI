@@ -32,7 +32,7 @@ anlyss_grps <- list("mammals"="40674",  # must match tree name in 0_data/trees
                     "lepidosaurs"="8504",
                     "amphibia"="8292",
                     "vertebrates"="7742",
-                    "plants"="3193",
+                    "plants"="3193",  # embryophyta
                     "metazoa"="33208",
                     "arthropods"="6656")
 
