@@ -9,7 +9,7 @@ Original datasets used for publication can be downloaded here. The entire pipeli
 
 **Pipeline Structure**
 
-![EPI pipeline](https://raw.githubusercontent.com/DomBennett/Project-EPI/master/other/pipeline.png?token=AC0Jh9rA9Pl4RcQbVJMeGrQPQcEYOx63ks5X4p2ewA%3D%3D "EPI pipeline")
+![EPI pipeline](other/pipeline.png?raw=true "EPI pipeline")
 
 
 **Folder Organisation**
