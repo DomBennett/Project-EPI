@@ -5,8 +5,6 @@ It requires the following initial data files to be downloaded and placed in the 
 [NCBI taxonomy .dmp](ftp://ftp.ncbi.nih.gov/pub/taxonomy/), [panTheria database](http://esapubs.org/archive/ecol/e090/184/), [O'Leary mammalian morpholopies](http://www.morphobank.org/index.php/Projects/ProjectOverview/project_id/773),
 [Livezy avian morphologies](http://www.ncbi.nlm.nih.gov/pubmed/18784798) and [Lislevand avian traits](http://www.esapubs.org/archive/ecol/E088/096/default.htm#data). (URLs accessed Sept. 2016).
 
-Original datasets used for publication can be downloaded here. The entire pipeline with original results can be downloaded here. But woah there.... hold your horses, *publication is pending!*
-
 **Pipeline Structure**
 
 ![EPI pipeline](other/pipeline.png?raw=true "EPI pipeline")
@@ -70,6 +68,10 @@ The entire pipeline can be run via the setup and run scripts, e.g. in UNIX:
 Rscript setup.R
 Rscript run.R >& log &
 ```
+
+**Reference**
+
+Bennett, Dominic J., Sutton, Mark D., and Turvey, Samuel T. 2018. Quantifying the living fossil concept. *Palaeontologia Electronica* 21.1.15A 1-25. https://doi.org/10.26879/750
 
 **Author(s)**
 
