@@ -1,4 +1,4 @@
-# Quantifying the living fossil with an Evolutionary Performance Index (EPI)
+# Quantifying the living fossil
 
 Towards a quantified living fossil definition through the development of an evolutionary performance index (EPI). This pipeline generates EPI values for (potentially) all clades across the metazoa and plants.
 It requires the following initial data files to be downloaded and placed in the `0_data/` folder:
